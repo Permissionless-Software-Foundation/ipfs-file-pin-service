@@ -105,7 +105,7 @@ class IpfsRESTControllerLib {
       const body = ctx.request.body
       console.log('pinClaim() body: ', body)
 
-      const success = await this.useCases.ipfs.processPinClaim(body)
+      const result = await this.useCases.ipfs.processPinClaim(body)
 
       // const multiaddr = ctx.request.body.multiaddr
       // const getDetails = ctx.request.body.getDetails
@@ -116,9 +116,7 @@ class IpfsRESTControllerLib {
       //
       // ctx.body = result
 
-      ctx.body = {
-        success
-      }
+      ctx.body = result
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/pinClaim():', err)
       // ctx.throw(422, err.message)

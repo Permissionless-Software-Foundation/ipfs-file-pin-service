@@ -8,12 +8,8 @@
 import { assert } from 'chai'
 import sinon from 'sinon'
 
-// Local support libraries
-// const testUtils = require('../../utils/test-utils')
-
-// Unit under test (uut)
+// Local libraries
 import UserLib from '../../../src/use-cases/user.js'
-
 import adapters from '../mocks/adapters/index.js'
 
 describe('#users-use-case', () => {
