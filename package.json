@@ -22,7 +22,7 @@
     "title": "ipfs-file-pin-service",
     "url": "localhost:5000"
   },
-  "repository": "Permissionless-Software-Foundation/ipfs-service-provider",
+  "repository": "Permissionless-Software-Foundation/ipfs-file-pin-service",
   "dependencies": {
     "@chainsafe/libp2p-gossipsub": "11.0.1",
     "@chainsafe/libp2p-noise": "14.1.0",
