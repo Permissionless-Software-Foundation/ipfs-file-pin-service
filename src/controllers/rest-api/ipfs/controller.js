@@ -30,6 +30,7 @@ class IpfsRESTControllerLib {
     this.getRelays = this.getRelays.bind(this)
     this.handleError = this.handleError.bind(this)
     this.connect = this.connect.bind(this)
+    this.pinClaim = this.pinClaim.bind(this)
   }
 
   /**
@@ -94,6 +95,32 @@ class IpfsRESTControllerLib {
       ctx.body = result
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/connect():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  async pinClaim (ctx) {
+    try {
+      const body = ctx.request.body
+      console.log('pinClaim() body: ', body)
+
+      const success = await this.useCases.ipfs.processPinClaim(body)
+
+      // const multiaddr = ctx.request.body.multiaddr
+      // const getDetails = ctx.request.body.getDetails
+      //
+      // // console.log('this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs: ', this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs)
+      // const result = await this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs.connectToPeer({ multiaddr, getDetails })
+      // // console.log('result: ', result)
+      //
+      // ctx.body = result
+
+      ctx.body = {
+        success
+      }
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/pinClaim():', err)
       // ctx.throw(422, err.message)
       this.handleError(ctx, err)
     }

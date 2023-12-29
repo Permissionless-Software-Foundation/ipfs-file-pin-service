@@ -5,6 +5,7 @@
 */
 
 import UserUseCases from './user.js'
+import IpfsUseCases from './ipfs.js'
 
 class UseCases {
   constructor (localConfig = {}) {
@@ -17,6 +18,7 @@ class UseCases {
 
     // console.log('use-cases/index.js localConfig: ', localConfig)
     this.user = new UserUseCases(localConfig)
+    this.ipfs = new IpfsUseCases(localConfig)
   }
 
   // Run any startup Use Cases at the start of the app.
