@@ -96,6 +96,7 @@ class IpfsUseCases {
       const Pins = this.adapters.localdb.Pins
       const dbModel = new Pins(dbModelInput)
       await dbModel.save()
+      console.log('Pin Claim added to database.')
 
       return { success: true }
     } catch (err) {

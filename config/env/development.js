@@ -7,6 +7,6 @@
 export default {
   session: 'secret-boilerplate-token',
   token: 'secret-jwt-token',
-  database: 'mongodb://localhost:27017/ipfs-service-dev',
+  database: 'mongodb://localhost:27017/ipfs-file-pin-dev',
   env: 'dev'
 }
