@@ -35,6 +35,10 @@ class IpfsUseCaseMock {
   async processPinClaim () {
     return true
   }
+
+  async pinCid() {
+    return true
+  }
 }
 
 class UseCasesMock {

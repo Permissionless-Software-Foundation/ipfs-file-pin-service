@@ -12,7 +12,7 @@ import IpfsUseCases from '../../../src/use-cases/ipfs.js'
 import adapters from '../mocks/adapters/index.js'
 import mockDataLib from '../mocks/use-cases/ipfs-mock.js'
 
-describe('#users-use-case', () => {
+describe('#ipfs-use-case', () => {
   let uut
   let sandbox
   let mockData
@@ -205,7 +205,7 @@ describe('#users-use-case', () => {
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
       // sandbox.stub(uut, 'validateCid').resolves(true)
 
-      const result = await uut.pinCid(cid)
+      const result = await uut.pinCid({ cid })
 
       assert.equal(result, true)
     })
@@ -218,7 +218,7 @@ describe('#users-use-case', () => {
         sandbox.stub(uut.retryQueue, 'addToQueue').rejects(new Error('test error'))
 
         const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
-        await uut.pinCid(cid)
+        await uut.pinCid({ cid })
 
         assert.fail('Unexpected result')
       } catch (err) {

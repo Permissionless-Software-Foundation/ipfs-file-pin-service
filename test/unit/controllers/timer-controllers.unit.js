@@ -79,4 +79,22 @@ describe('#Timer-Controllers', () => {
       assert.equal(result, false)
     })
   })
+
+  describe('#pinCids', () => {
+    it('should retrieve pin models from the database and try to pin them', async () => {
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
+      sandbox.stub(uut.useCases.ipfs, 'pinCid').resolves()
+
+      const result = await uut.pinCids()
+
+      assert.equal(result, true)
+    })
+
+    it('should return false on error', async () => {
+      const result = await uut.pinCids()
+
+      assert.equal(result, false)
+    })
+  })
 })

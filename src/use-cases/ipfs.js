@@ -38,9 +38,14 @@ class IpfsUseCases {
     this.pinCid = this.pinCid.bind(this)
     this._getCid = this._getCid.bind(this)
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
+
+    // State
+    this.promiseTracker = {} // track promises for pinning content
+    this.promiseTrackerCnt = 0
   }
 
   // Process a new pin claim by adding it to the database.
+  // This function is called by the REST API /ipfs/pin-claim controller.
   async processPinClaim (inObj = {}) {
     try {
       console.log('processPinClaim() inObj: ', inObj)
@@ -99,9 +104,15 @@ class IpfsUseCases {
     }
   }
 
-  // Given a CID, pin it with the IPFS node attached to this app.
-  async pinCid (cid) {
+  // Given a pin claim model from the database, this function tries to pin
+  // the CID with the IPFS node attached to this app.
+  // This function is called by the pinCids() in the Timer Controller.
+  async pinCid (pinData = {}) {
     try {
+      console.log('pinData: ', pinData)
+
+      const { cid } = pinData
+
       console.log(`Attempting to pinning CID: ${cid}`)
 
       // Get the file so that we have it locally.
@@ -115,8 +126,17 @@ class IpfsUseCases {
 
       let fileSize = null
 
-      // const queueSize = this.retryQueue.validationQueue.size
-      // console.log(`Download requested for ${queueSize} files.`)
+      const queueSize = this.retryQueue.validationQueue.size
+      console.log(`Download requested for ${queueSize} files.`)
+
+      // If the pin is already being tracked, then skip.
+      let tracker
+      if (this.pinIsBeingTracked(cid)) {
+        console.log('This pin is already being tracked. Skipping.')
+        return true
+      } else {
+        tracker = this.trackPin(cid)
+      }
 
       const file = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
@@ -128,6 +148,10 @@ class IpfsUseCases {
 
       // TODO: Replace this with a validation function.
       const isValid = true
+
+      this.promiseTrackerCnt--
+      tracker.isValid = isValid
+      tracker.completed = true
 
       if (isValid) {
         // Pin the file
@@ -222,6 +246,33 @@ class IpfsUseCases {
       console.error('Error in _getTokenQtyDiff: ', err.message)
       throw err
     }
+  }
+
+  // Update the state to indicate that a download attempt is in progress for
+  // this CID.
+  trackPin (cid) {
+    const obj = {
+      // cid,
+      created: new Date(),
+      completed: false,
+      isValid: true // Assume valid
+    }
+
+    this.promiseTracker[cid] = obj
+    this.promiseTrackerCnt++
+
+    console.log(`promiseTracker has ${this.promiseTrackerCnt} entries.`)
+
+    return this.promiseTracker[cid]
+  }
+
+  // Returns true if the CID is already being tracked. Otherwise returns false.
+  pinIsBeingTracked (cid) {
+    const thisPromise = this.promiseTracker[cid]
+
+    if (thisPromise) return true
+
+    return false
   }
 }
 
