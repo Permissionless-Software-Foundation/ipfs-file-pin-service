@@ -7,6 +7,9 @@ import Wallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
 
+// Local libraries
+import PinEntity from '../entities/pin.js'
+
 const PSF_TOKEN_ID = '38e97c5d7d3585a2cbf3f9580c82ca33985f9cb0845d4dcce220cb709f9538b0'
 
 class IpfsUseCases {
@@ -28,6 +31,7 @@ class IpfsUseCases {
     this.retryQueue = new RetryQueue({
       concurrency: 6
     })
+    this.pinEntity = new PinEntity()
 
     // Bind 'this' object to all subfunctions
     this.processPinClaim = this.processPinClaim.bind(this)
@@ -36,18 +40,21 @@ class IpfsUseCases {
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
   }
 
-  // Process a new pin claim. Validate it, and pin the content if validation succeeds.
+  // Process a new pin claim by adding it to the database.
   async processPinClaim (inObj = {}) {
     try {
       console.log('processPinClaim() inObj: ', inObj)
       const { proofOfBurnTxid, cid, claimTxid } = inObj
 
+      // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
       pobTxDetails = pobTxDetails[0]
-      console.log('pobTxDetails: ', pobTxDetails)
+      // console.log('pobTxDetails: ', pobTxDetails)
+
+      // Get TX details for the pin claim.
       let claimTxDetails = await this.wallet.getTxData([claimTxid])
       claimTxDetails = claimTxDetails[0]
-      console.log('claimTxDetails: ', claimTxDetails)
+      // console.log('claimTxDetails: ', claimTxDetails)
 
       // Return false if PoB TX is not a valid SLP TX.
       if (!pobTxDetails.isValidSlp) {
@@ -61,10 +68,6 @@ class IpfsUseCases {
       if (pobTxDetails.tokenId !== PSF_TOKEN_ID) {
         console.log(`PoB TX ${pobTxDetails.txid} does not consume a valid token.`)
 
-        if (!pobTxDetails.tokenId) {
-          throw new Error('PoB Transaction data does not include a token ID.')
-        }
-
         return {
           success: false,
           details: 'Proof-of-burn does not consume a valid token'
@@ -72,10 +75,22 @@ class IpfsUseCases {
       }
 
       // Get the difference, or the amount of PSF tokens burned.
-      const diff = this._getTokenQtyDiff(pobTxDetails)
-      console.log('PSF tokens burned: ', diff)
+      const tokensBurned = this._getTokenQtyDiff(pobTxDetails)
+      console.log('PSF tokens burned: ', tokensBurned)
 
-      await this.pinCid(cid)
+      const dbModelInput = this.pinEntity.validate({
+        proofOfBurnTxid,
+        cid,
+        claimTxid,
+        pobTxDetails,
+        claimTxDetails,
+        tokensBurned
+      })
+
+      // Create the database model for this pin claim.
+      const Pins = this.adapters.localdb.Pins
+      const dbModel = new Pins(dbModelInput)
+      await dbModel.save()
 
       return { success: true }
     } catch (err) {
@@ -111,6 +126,7 @@ class IpfsUseCases {
       now = new Date()
       console.log(`Finished download of ${cid} at ${now.toISOString()}`)
 
+      // TODO: Replace this with a validation function.
       const isValid = true
 
       if (isValid) {

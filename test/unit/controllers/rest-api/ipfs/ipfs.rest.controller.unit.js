@@ -185,6 +185,34 @@ describe('#IPFS REST API', () => {
     })
   })
 
+  describe('#POST /pin-claim', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        // Force an error
+        sandbox.stub(uut.useCases.ipfs, 'processPinClaim').rejects(new Error('test error'))
+
+        await uut.pinClaim(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        console.log(err)
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'test error')
+      }
+    })
+
+    it('should return 200 status on success', async () => {
+      // Mock dependencies
+      sandbox.stub(uut.useCases.ipfs, 'processPinClaim').resolves({ success: true })
+
+      await uut.pinClaim(ctx)
+      // console.log('ctx.body: ', ctx.body)
+
+      assert.property(ctx.body, 'success')
+      assert.equal(ctx.body.success, true)
+    })
+  })
+
   describe('#handleError', () => {
     it('should still throw error if there is no message', () => {
       try {

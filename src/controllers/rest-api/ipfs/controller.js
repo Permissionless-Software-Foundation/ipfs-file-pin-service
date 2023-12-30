@@ -107,15 +107,6 @@ class IpfsRESTControllerLib {
 
       const result = await this.useCases.ipfs.processPinClaim(body)
 
-      // const multiaddr = ctx.request.body.multiaddr
-      // const getDetails = ctx.request.body.getDetails
-      //
-      // // console.log('this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs: ', this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs)
-      // const result = await this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.adapters.ipfs.connectToPeer({ multiaddr, getDetails })
-      // // console.log('result: ', result)
-      //
-      // ctx.body = result
-
       ctx.body = result
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/pinClaim():', err)
