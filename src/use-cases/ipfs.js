@@ -42,6 +42,7 @@ class IpfsUseCases {
     // State
     this.promiseTracker = {} // track promises for pinning content
     this.promiseTrackerCnt = 0
+    this.pinSuccess = 0
   }
 
   // Process a new pin claim by adding it to the database.
@@ -92,13 +93,30 @@ class IpfsUseCases {
         tokensBurned
       })
 
-      // Create the database model for this pin claim.
       const Pins = this.adapters.localdb.Pins
+
+      // TODO: Check to see CID is not already in database.
+      const existingModel = Pins.find({ cid })
+      if (existingModel.length) {
+        return {
+          success: true,
+          details: 'CID already being tracked by database'
+        }
+      }
+
+      // Create the database model for this pin claim.
       const dbModel = new Pins(dbModelInput)
       await dbModel.save()
       console.log('Pin Claim added to database.')
 
-      return { success: true }
+      // TODO: Try to pin CID immediately
+      // Do not await, so that the process is not blocked
+      this.pinCid(dbModel)
+
+      return {
+        success: true,
+        details: `Pinned new file with CID: ${cid}`
+      }
     } catch (err) {
       console.error('Error in processPinClaim(): ', err)
       throw err
