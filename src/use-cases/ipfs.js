@@ -187,12 +187,20 @@ class IpfsUseCases {
 
         this.pinSuccess++
         console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.`)
+
+        pinData.dataPinned = true
+        pinData.validClaim = true
+        await pinData.save()
       } else {
         // If the file does meet the size requirements, then unpin it.
         console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes. Unpinning file.`)
 
         // Delete the file from the blockstore
         await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+
+        pinData.dataPinned = false
+        pinData.validClaim = false
+        await pinData.save()
 
         return false
       }
