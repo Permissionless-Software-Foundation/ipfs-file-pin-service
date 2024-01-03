@@ -38,6 +38,7 @@ class IpfsUseCases {
     this.pinCid = this.pinCid.bind(this)
     this._getCid = this._getCid.bind(this)
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
+    this.getPinStatus = this.getPinStatus.bind(this)
 
     // State
     this.promiseTracker = {} // track promises for pinning content
@@ -96,7 +97,7 @@ class IpfsUseCases {
       const Pins = this.adapters.localdb.Pins
 
       // TODO: Check to see CID is not already in database.
-      const existingModel = Pins.find({ cid })
+      const existingModel = await Pins.find({ cid })
       if (existingModel.length) {
         return {
           success: true,
@@ -292,6 +293,25 @@ class IpfsUseCases {
     if (thisPromise) return true
 
     return false
+  }
+
+  // This is called by the /ipfs/pin-status/:cid REST API endpoint.
+  // It returns the pinning status of the file identied by the CID.
+  async getPinStatus (inObj = {}) {
+    try {
+      const { cid } = inObj
+
+      if (!cid) throw new Error('CID is undefined')
+
+      const Pins = this.adapters.localdb.Pins
+      const existingModel = await Pins.find({ cid })
+      console.log('existingModel: ', existingModel)
+
+      return existingModel[0]
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/getPinStatus()')
+      throw err
+    }
   }
 }
 

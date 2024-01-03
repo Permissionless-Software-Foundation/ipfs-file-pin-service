@@ -31,6 +31,7 @@ class IpfsRESTControllerLib {
     this.handleError = this.handleError.bind(this)
     this.connect = this.connect.bind(this)
     this.pinClaim = this.pinClaim.bind(this)
+    this.pinStatus = this.pinStatus.bind(this)
   }
 
   /**
@@ -110,6 +111,21 @@ class IpfsRESTControllerLib {
       ctx.body = result
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/pinClaim():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Check on the status of a pin request.
+  async pinStatus (ctx) {
+    try {
+      const cid = ctx.params.cid
+
+      const status = await this.useCases.ipfs.getPinStatus({ cid })
+
+      ctx.body = status
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/pinStatus():', err)
       // ctx.throw(422, err.message)
       this.handleError(ctx, err)
     }
