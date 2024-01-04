@@ -53,7 +53,7 @@ class IpfsUseCases {
   async processPinClaim (inObj = {}) {
     try {
       console.log('processPinClaim() inObj: ', inObj)
-      const { proofOfBurnTxid, cid, claimTxid } = inObj
+      const { proofOfBurnTxid, cid, claimTxid, filename } = inObj
 
       // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
@@ -90,6 +90,7 @@ class IpfsUseCases {
       const dbModelInput = this.pinEntity.validate({
         proofOfBurnTxid,
         cid,
+        filename,
         claimTxid,
         pobTxDetails,
         claimTxDetails,
@@ -361,7 +362,7 @@ class IpfsUseCases {
       }
       const readStream = bufferToStream(fileBuf)
 
-      const filename = 'file.jpg'
+      const filename = existingModel.filename
 
       return { filename, readStream }
     } catch (err) {

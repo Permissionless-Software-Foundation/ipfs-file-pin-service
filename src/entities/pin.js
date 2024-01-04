@@ -4,7 +4,7 @@
 
 class Pin {
   validate (inObj = {}) {
-    const { proofOfBurnTxid, cid, claimTxid, pobTxDetails, claimTxDetails, tokensBurned } = inObj
+    const { proofOfBurnTxid, cid, claimTxid, pobTxDetails, claimTxDetails, tokensBurned, filename } = inObj
 
     // Input Validation
     if (!proofOfBurnTxid || typeof proofOfBurnTxid !== 'string') {
@@ -16,10 +16,14 @@ class Pin {
     if (!claimTxid || typeof claimTxid !== 'string') {
       throw new Error("Property 'claimTxid' must be a string!")
     }
+    if (!filename || typeof filename !== 'string') {
+      throw new Error("Property 'filename' must be a string!")
+    }
 
     const pinData = {
       proofOfBurnTxid,
       cid,
+      filename,
       claimTxid,
       pobTxDetails,
       claimTxDetails,

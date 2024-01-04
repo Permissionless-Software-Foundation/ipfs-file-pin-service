@@ -11,6 +11,7 @@ import mongoose from 'mongoose'
 const Pin = new mongoose.Schema({
   proofOfBurnTxid: { type: String },
   cid: { type: String },
+  filename: { type: String },
   claimTxid: { type: String },
   pobTxDetails: { type: Object },
   claimTxDetails: { type: Object },
