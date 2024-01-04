@@ -6,6 +6,7 @@
 import Wallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
+import { Duplex } from 'stream'
 
 // Local libraries
 import PinEntity from '../entities/pin.js'
@@ -39,6 +40,7 @@ class IpfsUseCases {
     this._getCid = this._getCid.bind(this)
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
+    this.downloadCid = this.downloadCid.bind(this)
 
     // State
     this.promiseTracker = {} // track promises for pinning content
@@ -318,6 +320,52 @@ class IpfsUseCases {
       return existingModel[0]
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/getPinStatus()')
+      throw err
+    }
+  }
+
+  async downloadCid (inObj = {}) {
+    try {
+      const { cid } = inObj
+
+      if (!cid) throw new Error('CID is undefined')
+
+      const Pins = this.adapters.localdb.Pins
+      let existingModel = await Pins.find({ cid })
+      existingModel = existingModel[0]
+      console.log('existingModel: ', existingModel)
+
+      if (!existingModel) {
+        throw new Error(`Database model for CID ${cid} does not exist.`)
+      }
+
+      if (!existingModel.dataPinned) {
+        throw new Error('File has not been pinned. Not available.')
+      }
+
+      const helia = this.adapters.ipfs.ipfs
+
+      // Convert the file to a Buffer.
+      const fileChunks = []
+      for await (const chunk of helia.fs.cat(cid)) {
+        fileChunks.push(chunk)
+      }
+      const fileBuf = Buffer.concat(fileChunks)
+
+      // Convert the Buffer into a readable stream
+      const bufferToStream = (myBuffer) => {
+        const tmp = new Duplex()
+        tmp.push(myBuffer)
+        tmp.push(null)
+        return tmp
+      }
+      const readStream = bufferToStream(fileBuf)
+
+      const filename = 'file.jpg'
+
+      return { filename, readStream }
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/dowloadCid()')
       throw err
     }
   }
