@@ -50,7 +50,8 @@ describe('#Pin-Entity', () => {
       const inputData = {
         proofOfBurnTxid: 'fake-txid',
         cid: 'test',
-        claimTxid: 'test-txid'
+        claimTxid: 'test-txid',
+        filename: 'test.txt'
       }
 
       const result = uut.validate(inputData)
