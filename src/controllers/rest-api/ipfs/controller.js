@@ -142,10 +142,6 @@ class IpfsRESTControllerLib {
 
       const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid })
 
-      // ctx.body = {
-      //   success: true
-      // }
-
       ctx.body = readStream
       ctx.attachment(filename)
     } catch (err) {

@@ -2,6 +2,11 @@
   Mocks for the Adapter library.
 */
 
+async function * asyncGenerator1() {
+  yield Buffer.from('0x01', "hex")
+  yield Buffer.from('0x02', "hex")
+}
+
 class IpfsAdapter {
   constructor () {
     this.ipfs = {

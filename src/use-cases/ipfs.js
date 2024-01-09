@@ -10,6 +10,7 @@ import { Duplex } from 'stream'
 
 // Local libraries
 import PinEntity from '../entities/pin.js'
+import config from '../../config/index.js'
 
 const PSF_TOKEN_ID = '38e97c5d7d3585a2cbf3f9580c82ca33985f9cb0845d4dcce220cb709f9538b0'
 
@@ -33,6 +34,8 @@ class IpfsUseCases {
       concurrency: 6
     })
     this.pinEntity = new PinEntity()
+    this.CID = CID
+    this.config = config
 
     // Bind 'this' object to all subfunctions
     this.processPinClaim = this.processPinClaim.bind(this)
@@ -141,7 +144,7 @@ class IpfsUseCases {
       // Get the file so that we have it locally.
       // console.log(`Getting file ${cid}`)
 
-      const cidClass = CID.parse(cid)
+      const cidClass = this.CID.parse(cid)
       // console.log('cidClass: ', cidClass)
 
       let now = new Date()
@@ -170,7 +173,11 @@ class IpfsUseCases {
       console.log(`Finished download of ${cid} at ${now.toISOString()}`)
 
       // TODO: Replace this with a validation function.
-      const isValid = true
+      // const isValid = true
+      let isValid = false
+      if (fileSize < this.config.maxPinSize) {
+        isValid = true
+      }
 
       this.promiseTrackerCnt--
       tracker.isValid = isValid
@@ -325,6 +332,7 @@ class IpfsUseCases {
     }
   }
 
+  // Download a pinned file, given its CID.
   async downloadCid (inObj = {}) {
     try {
       const { cid } = inObj

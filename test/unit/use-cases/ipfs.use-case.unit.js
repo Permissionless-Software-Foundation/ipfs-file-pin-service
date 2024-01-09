@@ -48,7 +48,7 @@ describe('#ipfs-use-case', () => {
   })
 
   describe('#processPinClaim', () => {
-    it('should process a valid pin claim', async () => {
+    it('should report if CID is already being tracked by DB', async () => {
       // Mock dependencies and force desired code path
       sandbox.stub(uut.wallet, 'getTxData')
         .onCall(0).resolves([mockData.pobValidTxDetails01])
@@ -124,6 +124,27 @@ describe('#ipfs-use-case', () => {
         assert.include(err.message, 'test error')
       }
     })
+
+    it('should process a valid pin claim', async () => {
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.wallet, 'getTxData')
+        .onCall(0).resolves([mockData.pobValidTxDetails01])
+        .onCall(1).resolves([mockData.claimValidTxDetails01])
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([])
+      sandbox.stub(uut, 'pinCid').resolves()
+
+      const inObj = {
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        filename: 'test.txt'
+      }
+
+      const result = await uut.processPinClaim(inObj)
+      // console.log('result: ', result)
+
+      assert.equal(result.success, true)
+    })
   })
 
   describe('#_getCid', () => {
@@ -188,24 +209,28 @@ describe('#ipfs-use-case', () => {
   })
 
   describe('#pinCid', () => {
-    // it('should return false if file is too big', async () => {
-    //   // Mock dependencies and force desired code path.
-    //   sandbox.stub(uut, '_getCid').resolves([1])
-    //   // sandbox.stub(uut, 'validateCid').resolves(false)
-    //
-    //   const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
-    //
-    //   const result = await uut.pinCid(cid)
-    //
-    //   assert.equal(result, false)
-    // })
+    it('should return false if file is too big', async () => {
+      // Mock dependencies and force desired code path.
+      sandbox.stub(uut, '_getCid').resolves([1, 2, 3, 4, 5])
+      sandbox.stub(uut.CID, 'parse').returns('fake-cid')
+      uut.config.maxPinSize = 2
+
+      const pin = {
+        cid: 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta',
+        save: async () => {}
+      }
+
+      const result = await uut.pinCid(pin)
+
+      assert.equal(result, false)
+    })
 
     it('should return true if file is successfully pinned', async () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
-      // sandbox.stub(uut, 'validateCid').resolves(true)
+      uut.config.maxPinSize = 100
 
       const inObj = {
         cid,
@@ -231,6 +256,148 @@ describe('#ipfs-use-case', () => {
       } catch (err) {
         assert.equal(err.message, 'test error')
       }
+    })
+
+    it('should return true if file is already being tracked and pinned', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      // Mock dependencies
+      sandbox.stub(uut, 'pinIsBeingTracked').returns(true)
+
+      const inObj = {
+        cid,
+        save: async () => {}
+      }
+
+      const result = await uut.pinCid(inObj)
+
+      assert.equal(result, true)
+    })
+
+    it('should return true if file is already pinned', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      // Mock dependencies
+      sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
+      uut.config.maxPinSize = 100
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('Already pinned'))
+
+      const inObj = {
+        cid,
+        save: async () => {}
+      }
+
+      const result = await uut.pinCid(inObj)
+
+      assert.equal(result, true)
+    })
+
+    it('should throw error if adding pin throws an unexpected error', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      // Mock dependencies
+      sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
+      uut.config.maxPinSize = 100
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('test error'))
+
+      const inObj = {
+        cid,
+        save: async () => {}
+      }
+
+      try {
+        await uut.pinCid(inObj)
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'test error')
+      }
+    })
+  })
+
+  describe('#getPinStatus', () => {
+    it('should throw error if CID is not provided', async () => {
+      try {
+        await uut.getPinStatus({})
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'CID is undefined')
+      }
+    })
+
+    it('should return the database model', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ cid }])
+
+      const result = await uut.getPinStatus({ cid })
+      // console.log('result: ', result)
+
+      assert.equal(result.cid, cid)
+    })
+  })
+
+  describe('#downloadCid', () => {
+    it('should throw error if CID is not provided', async () => {
+      try {
+        await uut.downloadCid({})
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'CID is undefined')
+      }
+    })
+
+    it('should throw error if database model does not exist', async () => {
+      try {
+        const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+        // Mock dependencies and force desired code path
+        sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([])
+
+        await uut.downloadCid({ cid })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'Database model for CID')
+      }
+    })
+
+    it('should throw error if file has not been pinned', async () => {
+      try {
+        const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+        // Mock dependencies and force desired code path
+        sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+          dataPinned: false
+        }])
+
+        await uut.downloadCid({ cid })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'File has not been pinned. Not available.')
+      }
+    })
+
+    it('should return a read stream if the file is pinned', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+        dataPinned: true,
+        filename: 'test.txt'
+      }])
+
+      const result = await uut.downloadCid({ cid })
+      // console.log('result: ', result)
+
+      assert.property(result, 'filename')
+      assert.property(result, 'readStream')
+
+      assert.equal(result.filename, 'test.txt')
     })
   })
 })

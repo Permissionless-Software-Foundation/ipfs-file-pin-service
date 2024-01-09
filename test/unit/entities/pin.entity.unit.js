@@ -46,6 +46,14 @@ describe('#Pin-Entity', () => {
       }
     })
 
+    it('should throw an error if filename is not provided', () => {
+      try {
+        uut.validate({ proofOfBurnTxid: 'fake-txid', cid: 'test', claimTxid: 'fake-txid' })
+      } catch (err) {
+        assert.include(err.message, "Property 'filename' must be a string!")
+      }
+    })
+
     it('should return a Pin object', () => {
       const inputData = {
         proofOfBurnTxid: 'fake-txid',
