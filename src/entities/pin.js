@@ -1,0 +1,39 @@
+/*
+  Pin Entity
+*/
+
+class Pin {
+  validate (inObj = {}) {
+    const { proofOfBurnTxid, cid, claimTxid, pobTxDetails, claimTxDetails, tokensBurned, filename } = inObj
+
+    // Input Validation
+    if (!proofOfBurnTxid || typeof proofOfBurnTxid !== 'string') {
+      throw new Error("Property 'proofOfBurnTxid' must be a string!")
+    }
+    if (!cid || typeof cid !== 'string') {
+      throw new Error("Property 'cid' must be a string!")
+    }
+    if (!claimTxid || typeof claimTxid !== 'string') {
+      throw new Error("Property 'claimTxid' must be a string!")
+    }
+    if (!filename || typeof filename !== 'string') {
+      throw new Error("Property 'filename' must be a string!")
+    }
+
+    const pinData = {
+      proofOfBurnTxid,
+      cid,
+      filename,
+      claimTxid,
+      pobTxDetails,
+      claimTxDetails,
+      tokensBurned,
+      validClaim: null,
+      dataPinned: false
+    }
+
+    return pinData
+  }
+}
+
+export default Pin

@@ -22,7 +22,7 @@ const ipfsCoordName = process.env.COORD_NAME
 
 export default {
   // Configure TCP port.
-  port: process.env.PORT || 5020,
+  port: process.env.PORT || 5031,
 
   // Password for HTML UI that displays logs.
   logPass: 'test',
@@ -104,5 +104,7 @@ export default {
 
     // v2 Circuit Relay server (FullStack.cash)
     // '/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWFQ11GQ5NubsJGhYZ4X3wrAGimLevxfm6HPExCrMYhpSL'
-  ]
+  ],
+
+  maxPinSize: 1000000
 }

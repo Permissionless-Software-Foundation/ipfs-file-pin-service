@@ -28,6 +28,7 @@ class TimerControllers {
 
     // Bind 'this' object to all subfunctions.
     this.exampleTimerFunc = this.exampleTimerFunc.bind(this)
+    this.pinCids = this.pinCids.bind(this)
 
     // this.startTimers()
   }
@@ -37,12 +38,14 @@ class TimerControllers {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
     this.optimizeWalletHandle = setInterval(this.exampleTimerFunc, 60000 * 10)
+    this.pinCidsHandle = setInterval(this.pinCids, 60000 * 10)
 
     return true
   }
 
   stopTimers () {
     clearInterval(this.optimizeWalletHandle)
+    clearInterval(this.pinCidsHandle)
   }
 
   // Replace this example function with your own timer handler.
@@ -57,6 +60,29 @@ class TimerControllers {
       console.error('Error in exampleTimerFunc(): ', err)
 
       // Note: Do not throw an error. This is a top-level function.
+      return false
+    }
+  }
+
+  // Periodically check the database of pins and create a download/pin request
+  // if one has not already been created.
+  async pinCids () {
+    try {
+      const Pins = this.adapters.localdb.Pins
+
+      // Get all pins in the database
+      const pins = await Pins.find({})
+
+      for (let i = 0; i < pins.length; i++) {
+        const thisPin = pins[i]
+
+        await this.useCases.ipfs.pinCid(thisPin)
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error in timer-controllers.js/pinCids(): ', err)
+      // Do not throw an error. This is a top-level function.
       return false
     }
   }

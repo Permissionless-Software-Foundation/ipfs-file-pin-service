@@ -2,11 +2,29 @@
   Mocks for the Adapter library.
 */
 
+async function * asyncGenerator1() {
+  yield Buffer.from('0x01', "hex")
+  yield Buffer.from('0x02', "hex")
+}
+
 class IpfsAdapter {
   constructor () {
     this.ipfs = {
       files: {
         stat: () => {}
+      },
+      pins: {
+        add: async () => {},
+        rm: async () => {}
+      },
+      fs: {
+        addFile: async () => {},
+        stat: async () => {},
+        cat: () => asyncGenerator1()
+      },
+      blockstore: {
+        get: async () => {},
+        delete: async () => {}
       }
     }
   }
@@ -71,7 +89,37 @@ const localdb = {
 
   validatePassword: () => {
     return true
-  }
+  },
+
+  Pins: class Pins {
+    static findById () {}
+    static find () {}
+    static findOne () {
+      return {
+        validatePassword: localdb.validatePassword
+      }
+    }
+
+    async save () {
+      return {}
+    }
+
+    generateToken () {
+      return '123'
+    }
+
+    toJSON () {
+      return {}
+    }
+
+    async remove () {
+      return true
+    }
+
+    async validatePassword () {
+      return true
+    }
+  },
 }
 
 export default { ipfs, localdb };

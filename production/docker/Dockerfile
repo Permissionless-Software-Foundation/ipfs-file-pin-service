@@ -12,9 +12,12 @@ RUN apt-get update
 RUN apt-get install -y sudo git curl nano gnupg wget
 
 #Install Node and NPM
-RUN curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
-RUN bash nodesource_setup.sh
-RUN apt-get install -y nodejs build-essential
+RUN sudo apt-get install -y ca-certificates curl gnupg
+RUN sudo mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+RUN sudo apt-get update
+RUN sudo apt-get install -y nodejs build-essential
 
 #Create the user 'safeuser' and add them to the sudo group.
 #RUN useradd -ms /bin/bash safeuser
@@ -46,11 +49,11 @@ RUN npm set registry http://94.130.170.209:4873/
 
 # Clone the rest.bitcoin.com repository
 WORKDIR /home/safeuser
-RUN git clone https://github.com/Permissionless-Software-Foundation/ipfs-service-provider
+RUN git clone https://github.com/Permissionless-Software-Foundation/ipfs-file-pin-service
 
 # Switch to the desired branch. `master` is usually stable,
 # and `stage` has the most up-to-date changes.
-WORKDIR /home/safeuser/ipfs-service-provider
+WORKDIR /home/safeuser/ipfs-file-pin-service
 
 # For development: switch to unstable branch
 RUN git checkout ct-unstable

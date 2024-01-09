@@ -30,6 +30,9 @@ class IpfsRESTControllerLib {
     this.getRelays = this.getRelays.bind(this)
     this.handleError = this.handleError.bind(this)
     this.connect = this.connect.bind(this)
+    this.pinClaim = this.pinClaim.bind(this)
+    this.pinStatus = this.pinStatus.bind(this)
+    this.downloadCid = this.downloadCid.bind(this)
   }
 
   /**
@@ -94,6 +97,55 @@ class IpfsRESTControllerLib {
       ctx.body = result
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/connect():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  async pinClaim (ctx) {
+    try {
+      const body = ctx.request.body
+      console.log('pinClaim() body: ', body)
+
+      const result = await this.useCases.ipfs.processPinClaim(body)
+
+      ctx.body = result
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/pinClaim():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Check on the status of a pin request.
+  async pinStatus (ctx) {
+    try {
+      const cid = ctx.params.cid
+
+      const status = await this.useCases.ipfs.getPinStatus({ cid })
+
+      ctx.body = status
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/pinStatus():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Download a file identified by CID, which is pinned to this node.
+  // This function will hopefully be phased out by an IPFS Gateway once such
+  // functionality has been developed for Helia. At the moment, nothing exists,
+  // so I had to create my own way for downloading pinned files of HTTP.
+  async downloadCid (ctx) {
+    try {
+      const cid = ctx.params.cid
+
+      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid })
+
+      ctx.body = readStream
+      ctx.attachment(filename)
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/downloadCid():', err)
       // ctx.throw(422, err.message)
       this.handleError(ctx, err)
     }

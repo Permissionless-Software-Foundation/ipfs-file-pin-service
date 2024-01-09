@@ -3,8 +3,8 @@
   functions are called by the /user REST API endpoints.
 */
 
+// Local libraries
 import UserEntity from '../entities/user.js'
-
 import wlogger from '../adapters/wlogger.js'
 
 class UserLib {

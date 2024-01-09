@@ -31,12 +31,31 @@ class UserUseCaseMock {
   }
 }
 
+class IpfsUseCaseMock {
+  async processPinClaim () {
+    return true
+  }
+
+  async pinCid() {
+    return true
+  }
+
+  async getPinStatus() {
+    return true
+  }
+
+  async downloadCid() {
+    return true
+  }
+}
+
 class UseCasesMock {
   constuctor(localConfig = {}) {
     // this.user = new UserUseCaseMock(localConfig)
   }
 
   user = new UserUseCaseMock()
+  ipfs = new IpfsUseCaseMock()
 }
 
 export default UseCasesMock;
