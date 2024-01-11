@@ -323,7 +323,7 @@ class IpfsUseCases {
 
       const Pins = this.adapters.localdb.Pins
       const existingModel = await Pins.find({ cid })
-      console.log('existingModel: ', existingModel)
+      // console.log('existingModel: ', existingModel)
 
       return existingModel[0]
     } catch (err) {
@@ -342,7 +342,7 @@ class IpfsUseCases {
       const Pins = this.adapters.localdb.Pins
       let existingModel = await Pins.find({ cid })
       existingModel = existingModel[0]
-      console.log('existingModel: ', existingModel)
+      // console.log('existingModel: ', existingModel)
 
       if (!existingModel) {
         throw new Error(`Database model for CID ${cid} does not exist.`)
