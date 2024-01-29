@@ -228,19 +228,19 @@ class IpfsUseCases {
     const { cid } = inObj
 
     try {
-      // const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
-      // return file
+      const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
+      return file
 
-      const fs = this.adapters.ipfs.ipfs.fs
-      const chunks = []
-      for await (const buf of fs.cat(cid)) {
-        // console.info(buf)
-        chunks.push(buf)
-      }
-      console.log('File downloaded successfully.')
-
-      const fileBuf = Buffer.from(chunks)
-      return fileBuf
+      // const fs = this.adapters.ipfs.ipfs.fs
+      // const chunks = []
+      // for await (const buf of fs.cat(cid)) {
+      //   // console.info(buf)
+      //   chunks.push(buf)
+      // }
+      // console.log('File downloaded successfully.')
+      //
+      // const fileBuf = Buffer.from(chunks)
+      // return fileBuf
     } catch (err) {
       console.error('Error in _getCid(): ', err)
       throw err
