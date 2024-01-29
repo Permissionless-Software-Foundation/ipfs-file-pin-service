@@ -56,7 +56,7 @@ RUN git clone https://github.com/Permissionless-Software-Foundation/ipfs-file-pi
 WORKDIR /home/safeuser/ipfs-file-pin-service
 
 # For development: switch to unstable branch
-RUN git checkout ct-unstable
+RUN git checkout v1.0.10
 
 # Install dependencies
 #RUN mkdir .ipfsdata
