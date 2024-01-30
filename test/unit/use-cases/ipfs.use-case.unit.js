@@ -213,6 +213,7 @@ describe('#ipfs-use-case', () => {
       // Mock dependencies and force desired code path.
       sandbox.stub(uut, '_getCid').resolves([1, 2, 3, 4, 5])
       sandbox.stub(uut.CID, 'parse').returns('fake-cid')
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(false)
       uut.config.maxPinSize = 2
 
       const pin = {
@@ -230,6 +231,7 @@ describe('#ipfs-use-case', () => {
 
       // Mock dependencies
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
       uut.config.maxPinSize = 100
 
       const inObj = {
@@ -281,6 +283,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
       uut.config.maxPinSize = 100
       sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('Already pinned'))
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
 
       const inObj = {
         cid,
@@ -299,6 +302,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
       uut.config.maxPinSize = 100
       sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('test error'))
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
 
       const inObj = {
         cid,
@@ -398,6 +402,15 @@ describe('#ipfs-use-case', () => {
       assert.property(result, 'readStream')
 
       assert.equal(result.filename, 'test.txt')
+    })
+  })
+
+  describe('#validateSizeAndPayment', () => {
+    it('should validate payment', async () => {
+      const fileSize = 123456
+      const tokensBurned = 0.09
+
+      await uut.validateSizeAndPayment({ fileSize, tokensBurned })
     })
   })
 })

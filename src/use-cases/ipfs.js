@@ -44,6 +44,7 @@ class IpfsUseCases {
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
+    this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
 
     // State
     this.promiseTracker = {} // track promises for pinning content
@@ -116,7 +117,6 @@ class IpfsUseCases {
       await dbModel.save()
       console.log('Pin Claim added to database.')
 
-      // TODO: Try to pin CID immediately
       // Do not await, so that the process is not blocked
       this.pinCid(dbModel)
 
@@ -137,7 +137,7 @@ class IpfsUseCases {
     try {
       console.log('pinData: ', pinData)
 
-      const { cid } = pinData
+      const { cid, tokensBurned } = pinData
 
       console.log(`Attempting to pinning CID: ${cid}`)
 
@@ -174,10 +174,11 @@ class IpfsUseCases {
 
       // TODO: Replace this with a validation function.
       // const isValid = true
-      let isValid = false
-      if (fileSize < this.config.maxPinSize) {
-        isValid = true
-      }
+      // let isValid = false
+      // if (fileSize < this.config.maxPinSize) {
+      //   isValid = true
+      // }
+      const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
 
       this.promiseTrackerCnt--
       tracker.isValid = isValid
@@ -222,6 +223,38 @@ class IpfsUseCases {
     }
   }
 
+  // This function returns true if the pin claim matches the following requirments:
+  // - The file is less than the maximum file size set in the config.
+  // - An appropriate amount of PSF tokens were burnt, relative to the size of the file.
+  // Otherwise it returns false.
+  async validateSizeAndPayment (inObj = {}) {
+    try {
+      const isValid = false
+
+      const { fileSize, tokensBurned } = inObj
+      console.log('tokensBurned: ', tokensBurned)
+
+      // Return false if the file is larger than the configured max size.
+      const fileSizeIsValid = fileSize < this.config.maxPinSize
+      if (!fileSizeIsValid) {
+        return isValid
+      }
+
+      // Get the current price of the PSF token.
+      // const result = await this.axios.get(`https://psfoundation.cash/price`)
+      // console.log('result.data: ', result.data)
+
+      // Get the cost in PSF tokens to store 1MB
+      const writePrice = await this.adapters.writePrice.getMcWritePrice()
+      console.log('writePrice: ', writePrice)
+
+      return isValid
+    } catch (err) {
+      console.error('Error in validateSizeAndPayment()')
+      throw err
+    }
+  }
+
   // This function wraps the IPFS get() function so that it can be called by
   // the retry queue.
   async _getCid (inObj = {}) {
@@ -249,7 +282,6 @@ class IpfsUseCases {
 
   // Get the differential token qty between the inputs and outputs of a tx.
   // This determins if the tx was a proper token burn.
-  // This function is consumed by _validateTx()
   _getTokenQtyDiff (txInfo) {
     try {
       // Input validation

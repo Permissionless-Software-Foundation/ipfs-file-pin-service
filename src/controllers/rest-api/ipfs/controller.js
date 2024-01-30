@@ -103,6 +103,9 @@ class IpfsRESTControllerLib {
     }
   }
 
+  // This endpoint is called by psf-slp-indexer when it detects a new Pin Claim
+  // on the blockchain. It passes the Claim information to this endpoint for
+  // validation and processing.
   async pinClaim (ctx) {
     try {
       const body = ctx.request.body
