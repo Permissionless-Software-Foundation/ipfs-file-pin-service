@@ -12,7 +12,10 @@ import WritePriceModel from './localdb/models/write-price.js'
 class WritePrice {
   constructor (localConfig = {}) {
     // Encapsulate dependencies
-    this.wallet = new SlpWallet()
+    this.wallet = new SlpWallet({
+      interface: 'consumer-api',
+      restURL: 'https://free-bch.fullstack.cash'
+    })
     this.bchjs = undefined // placeholder
     this.ps009 = null // placeholder
     this.axios = axios

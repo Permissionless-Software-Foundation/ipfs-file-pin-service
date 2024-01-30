@@ -229,15 +229,13 @@ class IpfsUseCases {
   // Otherwise it returns false.
   async validateSizeAndPayment (inObj = {}) {
     try {
-      const isValid = false
-
       const { fileSize, tokensBurned } = inObj
       console.log('tokensBurned: ', tokensBurned)
 
       // Return false if the file is larger than the configured max size.
       const fileSizeIsValid = fileSize < this.config.maxPinSize
       if (!fileSizeIsValid) {
-        return isValid
+        return false
       }
 
       // Get the current price of the PSF token.
@@ -248,7 +246,17 @@ class IpfsUseCases {
       const writePrice = await this.adapters.writePrice.getMcWritePrice()
       console.log('writePrice: ', writePrice)
 
-      return isValid
+      // Calculate costs in PSF tokens for this pin request.
+      const minCost = writePrice
+      const mbCost = fileSize / 1000000 * writePrice
+      console.log(`minCost: ${writePrice}, mbCost: ${mbCost}`)
+
+      // Validate that enough PSF tokens were paid for this pin.
+      if (tokensBurned < minCost && tokensBurned < mbCost) {
+        return false
+      }
+
+      return true
     } catch (err) {
       console.error('Error in validateSizeAndPayment()')
       throw err
