@@ -112,7 +112,7 @@ export default {
   ],
 
   // Maximum allowable files size, in bytes.
-  maxPinSize: 1000000,
+  maxPinSize: 100000000,
 
   // Quantity of tokens required to burn in order to pin 1MB. This
   // default value is overwritten by a lookup of the write price set by the
