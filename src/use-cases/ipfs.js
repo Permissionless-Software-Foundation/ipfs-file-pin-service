@@ -166,6 +166,7 @@ class IpfsUseCases {
 
       const file = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
+      console.log('pinCid() file: ', file)
       fileSize = file.length
       console.log(`CID ${cid} is ${fileSize} bytes big.`)
 
