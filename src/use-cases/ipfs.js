@@ -248,6 +248,7 @@ class IpfsUseCases {
 
       // Calculate costs in PSF tokens for this pin request.
       const minCost = writePrice
+      console.log('fileSize: ', fileSize)
       const mbCost = fileSize / 1000000 * writePrice
       console.log(`minCost: ${writePrice}, mbCost: ${mbCost}`)
 
