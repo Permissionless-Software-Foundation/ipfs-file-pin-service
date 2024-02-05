@@ -34,6 +34,7 @@ class IpfsRESTControllerLib {
     this.pinStatus = this.pinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.getThisNode = this.getThisNode.bind(this)
+    this.downloadFile = this.downloadFile.bind(this)
   }
 
   /**
@@ -173,6 +174,18 @@ class IpfsRESTControllerLib {
       ctx.body = { thisNode }
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/getThisNode(): ')
+      this.handleError(ctx, err)
+    }
+  }
+
+  async downloadFile (ctx) {
+    try {
+      const { cid } = ctx.params
+
+      const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
+      return file
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/downloadFile(): ', err)
       this.handleError(ctx, err)
     }
   }
