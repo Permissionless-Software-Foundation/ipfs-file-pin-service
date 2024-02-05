@@ -150,7 +150,7 @@ class IpfsUseCases {
       let now = new Date()
       // console.log(`Starting download of ${cid} at ${now.toISOString()}`)
 
-      let fileSize = null
+      // let fileSize = null
 
       const queueSize = this.retryQueue.validationQueue.size
       console.log(`Download requested for ${queueSize} files.`)
@@ -164,10 +164,10 @@ class IpfsUseCases {
         tracker = this.trackPin(cid)
       }
 
-      const file = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
-      console.log('pinCid() file: ', file)
-      fileSize = file.length
+      // console.log('pinCid() file: ', file)
+      // fileSize = file.length
       console.log(`CID ${cid} is ${fileSize} bytes big.`)
 
       now = new Date()
@@ -271,12 +271,12 @@ class IpfsUseCases {
     const { cid } = inObj
 
     try {
-      const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
+      await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
       console.log('file stats: ', stats)
 
-      return file
+      return stats.fileSize
 
       // const fs = this.adapters.ipfs.ipfs.fs
       // const chunks = []
