@@ -272,6 +272,10 @@ class IpfsUseCases {
 
     try {
       const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
+
+      const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
+      console.log(`file stats: `, stats)
+
       return file
 
       // const fs = this.adapters.ipfs.ipfs.fs
