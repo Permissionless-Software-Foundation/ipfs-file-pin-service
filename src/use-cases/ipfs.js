@@ -276,7 +276,7 @@ class IpfsUseCases {
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
       console.log('file stats: ', stats)
 
-      return stats.fileSize
+      return Number(stats.fileSize)
 
       // const fs = this.adapters.ipfs.ipfs.fs
       // const chunks = []
