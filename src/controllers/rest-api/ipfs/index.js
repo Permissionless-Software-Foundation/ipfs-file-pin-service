@@ -59,6 +59,7 @@ class IpfsRouter {
     this.router.get('/pin-status/:cid', this.ipfsRESTController.pinStatus)
     this.router.get('/download/:cid', this.ipfsRESTController.downloadCid)
     this.router.get('/node', this.ipfsRESTController.getThisNode)
+    this.router.get('/download/:cid', this.ipfsRESTController.downloadFile)
 
     // Attach the Controller routes to the Koa app.
     app.use(this.router.routes())

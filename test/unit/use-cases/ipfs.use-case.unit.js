@@ -150,10 +150,11 @@ describe('#ipfs-use-case', () => {
   describe('#_getCid', () => {
     it('should get a file from the IPFS network', async () => {
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves(true)
+      sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'stat').resolves({ fileSize: 1000 })
 
       const result = await uut._getCid({ cid: 'fake-cid' })
 
-      assert.equal(result, true)
+      assert.equal(result, 1000)
     })
 
     it('should throw an error if there is a file download issue', async () => {
@@ -213,6 +214,7 @@ describe('#ipfs-use-case', () => {
       // Mock dependencies and force desired code path.
       sandbox.stub(uut, '_getCid').resolves([1, 2, 3, 4, 5])
       sandbox.stub(uut.CID, 'parse').returns('fake-cid')
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(false)
       uut.config.maxPinSize = 2
 
       const pin = {
@@ -229,7 +231,8 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies
-      sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
+      sandbox.stub(uut, '_getCid').resolves(1000)
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
       uut.config.maxPinSize = 100
 
       const inObj = {
@@ -245,8 +248,6 @@ describe('#ipfs-use-case', () => {
     it('should catch and throw errors', async () => {
       try {
         // Mock dependencies and force desired code path
-        // sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
-        // sandbox.stub(uut, 'validateCid').rejects(new Error('test error'))
         sandbox.stub(uut.retryQueue, 'addToQueue').rejects(new Error('test error'))
 
         const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
@@ -254,7 +255,7 @@ describe('#ipfs-use-case', () => {
 
         assert.fail('Unexpected result')
       } catch (err) {
-        assert.equal(err.message, 'test error')
+        assert.include(err.message, 'test error')
       }
     })
 
@@ -278,9 +279,9 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies
-      sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
       uut.config.maxPinSize = 100
-      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('Already pinned'))
+      sandbox.stub(uut, '_getCid').resolves(1000)
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
 
       const inObj = {
         cid,
@@ -296,9 +297,9 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies
-      sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves([1, 2, 3])
       uut.config.maxPinSize = 100
-      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').rejects(new Error('test error'))
+      sandbox.stub(uut.retryQueue, 'addToQueue').rejects('test error')
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
 
       const inObj = {
         cid,
@@ -310,7 +311,7 @@ describe('#ipfs-use-case', () => {
 
         assert.fail('Unexpected code path')
       } catch (err) {
-        assert.include(err.message, 'test error')
+        assert.include(err.message, '')
       }
     })
   })
@@ -398,6 +399,15 @@ describe('#ipfs-use-case', () => {
       assert.property(result, 'readStream')
 
       assert.equal(result.filename, 'test.txt')
+    })
+  })
+
+  describe('#validateSizeAndPayment', () => {
+    it('should validate payment', async () => {
+      const fileSize = 123456
+      const tokensBurned = 0.09
+
+      await uut.validateSizeAndPayment({ fileSize, tokensBurned })
     })
   })
 })

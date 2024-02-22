@@ -7,19 +7,16 @@
 // Public NPM libraries
 import BCHJS from '@psf/bch-js'
 
-// Load individual adapter libraries.
+// Local libraries
 import IPFSAdapter from './ipfs/index.js'
-
 import LocalDB from './localdb/index.js'
 import LogsAPI from './logapi.js'
 import Passport from './passport.js'
 import Nodemailer from './nodemailer.js'
-
-// const { wlogger } = require('./wlogger')
 import JSONFiles from './json-files.js'
-
 import FullStackJWT from './fullstack-jwt.js'
 import config from '../../config/index.js'
+import WritePrice from './write-price.js'
 
 class Adapters {
   constructor (localConfig = {}) {
@@ -32,6 +29,7 @@ class Adapters {
     this.jsonFiles = new JSONFiles()
     this.bchjs = new BCHJS()
     this.config = config
+    this.writePrice = new WritePrice()
 
     // Get a valid JWT API key and instance bch-js.
     this.fullStackJwt = new FullStackJWT(config)
@@ -57,6 +55,8 @@ class Adapters {
         // These lines are here to ensure code coverage hits 100%.
         console.log('Not starting IPFS node since this is an e2e test.')
       }
+
+      await this.writePrice.initialize()
 
       console.log('Async Adapters have been started.')
 
