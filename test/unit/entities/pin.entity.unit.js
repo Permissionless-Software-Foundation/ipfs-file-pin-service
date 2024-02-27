@@ -54,12 +54,21 @@ describe('#Pin-Entity', () => {
       }
     })
 
+    it('should throw an error if address is not provided', () => {
+      try {
+        uut.validate({ proofOfBurnTxid: 'fake-txid', cid: 'test', claimTxid: 'fake-txid', filename: 'test.txt' })
+      } catch (err) {
+        assert.include(err.message, "Property 'address' must be a string!")
+      }
+    })
+
     it('should return a Pin object', () => {
       const inputData = {
         proofOfBurnTxid: 'fake-txid',
         cid: 'test',
         claimTxid: 'test-txid',
-        filename: 'test.txt'
+        filename: 'test.txt',
+        address: 'fake-address'
       }
 
       const result = uut.validate(inputData)
@@ -72,6 +81,7 @@ describe('#Pin-Entity', () => {
       assert.property(result, 'tokensBurned')
       assert.property(result, 'validClaim')
       assert.property(result, 'dataPinned')
+      assert.property(result, 'address')
     })
   })
 })

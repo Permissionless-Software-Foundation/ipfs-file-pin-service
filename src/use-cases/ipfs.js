@@ -57,7 +57,7 @@ class IpfsUseCases {
   async processPinClaim (inObj = {}) {
     try {
       console.log('processPinClaim() inObj: ', inObj)
-      const { proofOfBurnTxid, cid, claimTxid, filename } = inObj
+      const { proofOfBurnTxid, cid, claimTxid, filename, address } = inObj
 
       // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
@@ -98,7 +98,8 @@ class IpfsUseCases {
         claimTxid,
         pobTxDetails,
         claimTxDetails,
-        tokensBurned
+        tokensBurned,
+        address
       })
 
       const Pins = this.adapters.localdb.Pins
