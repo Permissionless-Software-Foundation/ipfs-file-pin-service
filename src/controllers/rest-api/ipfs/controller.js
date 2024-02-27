@@ -110,7 +110,7 @@ class IpfsRESTControllerLib {
   async pinClaim (ctx) {
     try {
       const body = ctx.request.body
-      console.log('pinClaim() body: ', body)
+      console.log('---->pinClaim() body: ', body)
 
       const result = await this.useCases.ipfs.processPinClaim(body)
 

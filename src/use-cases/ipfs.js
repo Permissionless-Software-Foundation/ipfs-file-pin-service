@@ -136,7 +136,7 @@ class IpfsUseCases {
   // This function is called by the pinCids() in the Timer Controller.
   async pinCid (pinData = {}) {
     try {
-      console.log('pinData: ', pinData)
+      console.log('---->pinData: ', pinData)
 
       const { cid, tokensBurned } = pinData
 
