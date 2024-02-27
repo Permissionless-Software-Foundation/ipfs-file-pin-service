@@ -59,7 +59,8 @@ describe('#ipfs-use-case', () => {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
         cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
         claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt'
+        filename: 'test.txt',
+        address: 'fake-address'
       }
 
       const result = await uut.processPinClaim(inObj)
@@ -137,7 +138,8 @@ describe('#ipfs-use-case', () => {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
         cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
         claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt'
+        filename: 'test.txt',
+        address: 'fake-address'
       }
 
       const result = await uut.processPinClaim(inObj)

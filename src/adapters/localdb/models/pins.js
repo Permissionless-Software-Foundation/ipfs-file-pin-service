@@ -17,7 +17,8 @@ const Pin = new mongoose.Schema({
   claimTxDetails: { type: Object },
   tokensBurned: { type: Number },
   validClaim: { type: Boolean, default: null },
-  dataPinned: { type: Boolean, default: false }
+  dataPinned: { type: Boolean, default: false },
+  address: { type: String, default: null }
 })
 
 export default mongoose.model('pin', Pin)

@@ -42,6 +42,7 @@ describe('#IPFS', () => {
     it('should return a promise that resolves into an instance of IPFS.', async () => {
       // Mock dependencies.
       uut.IpfsCoord = IPFSCoordMock
+      sandbox.stub(uut, 'publicIp').resolves('123.456.78.9')
 
       const result = await uut.start()
       // console.log('result: ', result)
@@ -79,8 +80,10 @@ describe('#IPFS', () => {
 
     it('should return a promise that resolves into an instance of IPFS in production mode', async () => {
       uut.config.isProduction = true
+
       // Mock dependencies.
       uut.IpfsCoord = IPFSCoordMock
+      sandbox.stub(uut, 'publicIp').resolves('123.456.78.9')
 
       const result = await uut.start()
       // console.log('result: ', result)
