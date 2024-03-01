@@ -45,6 +45,7 @@ class IpfsUseCases {
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
+    this.getPinClaims = this.getPinClaims.bind(this)
 
     // State
     this.promiseTracker = {} // track promises for pinning content
@@ -136,7 +137,7 @@ class IpfsUseCases {
   // This function is called by the pinCids() in the Timer Controller.
   async pinCid (pinData = {}) {
     try {
-      console.log('---->pinData: ', pinData)
+      console.log('pinData: ', pinData)
 
       const { cid, tokensBurned } = pinData
 
@@ -433,6 +434,47 @@ class IpfsUseCases {
       return { filename, readStream }
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/dowloadCid()')
+      throw err
+    }
+  }
+
+  // Get the last 20 pin claim entries added to the database.
+  async getPinClaims (inObj = {}) {
+    try {
+      console.log('inObj: ', inObj)
+
+      const Pins = this.adapters.localdb.Pins
+
+      const getPins = (Model) => {
+        return new Promise((resolve, reject) => {
+          const pins = []
+          Model.find({}).sort('-date').exec((err, docs) => {
+            if (err) reject(err)
+
+            console.log('docs: ', docs)
+            console.log('docs.length: ', docs.length)
+            let pinLen = 20
+
+            if (docs.length < 20) { pinLen = docs.length }
+
+            for (let i = 0; i < pinLen; i++) {
+              pins.push(docs[i])
+            }
+
+            resolve(pins)
+          })
+        })
+      }
+
+      const pins = await getPins(Pins)
+      console.log('pins: ', pins)
+
+      return {
+        success: true,
+        pins
+      }
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/getPinClaims()')
       throw err
     }
   }
