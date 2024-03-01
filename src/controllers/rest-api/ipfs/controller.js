@@ -35,6 +35,7 @@ class IpfsRESTControllerLib {
     this.downloadCid = this.downloadCid.bind(this)
     this.getThisNode = this.getThisNode.bind(this)
     this.downloadFile = this.downloadFile.bind(this)
+    this.getPins = this.getPins.bind(this)
   }
 
   /**
@@ -186,6 +187,18 @@ class IpfsRESTControllerLib {
       return file
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/downloadFile(): ', err)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Get a paginated list of the latest pin claims.
+  async getPins (ctx) {
+    try {
+      const pins = await this.useCases.ipfs.getPinClaims()
+
+      ctx.body = pins
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/getPins(): ', err)
       this.handleError(ctx, err)
     }
   }

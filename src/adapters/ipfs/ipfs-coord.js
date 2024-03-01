@@ -48,7 +48,7 @@ class IpfsCoordAdapter {
 
     // Wait for the BCH wallet to create the wallet.
     await this.wallet.walletInfoPromise
-    console.log('ping01')
+
     // If configured as a Circuit Relay, get the public IP addresses for this node.
     if (this.config.isCircuitRelay) {
       try {
@@ -87,12 +87,12 @@ class IpfsCoordAdapter {
     // if (this.config.isProduction) {
     //   ipfsCoordOptions.nodeType = 'external'
     // }
-    console.log('ping02')
+
     this.ipfsCoord = new this.IpfsCoord(ipfsCoordOptions)
 
     // Wait for the ipfs-coord library to signal that it is ready.
     await this.ipfsCoord.start()
-    console.log('ping03')
+
     // Signal that this adapter is ready.
     this.isReady = true
 

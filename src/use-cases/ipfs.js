@@ -45,6 +45,7 @@ class IpfsUseCases {
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
+    this.getPinClaims = this.getPinClaims.bind(this)
 
     // State
     this.promiseTracker = {} // track promises for pinning content
@@ -433,6 +434,45 @@ class IpfsUseCases {
       return { filename, readStream }
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/dowloadCid()')
+      throw err
+    }
+  }
+
+  // Get the last 20 pin claim entries added to the database.
+  async getPinClaims (inObj = {}) {
+    try {
+      console.log('inObj: ', inObj)
+
+      const Pins = this.adapters.localdb.Pins
+
+      const unsortedPins = await Pins.find({})
+
+      const sortedPins = unsortedPins.sort(function (a, b) {
+        return b.recordTime - a.recordTime
+      })
+
+      let pinLen = 20
+      if (sortedPins.length < 20) { pinLen = sortedPins.length }
+
+      const pins = []
+      for (let i = 0; i < pinLen; i++) {
+        const thisPin = sortedPins[i]
+
+        // Extract selected properties for export.
+        const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime } = thisPin
+        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime }
+
+        pins.push(outObj)
+      }
+
+      console.log('pins: ', pins)
+
+      return {
+        success: true,
+        pins
+      }
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/getPinClaims()')
       throw err
     }
   }

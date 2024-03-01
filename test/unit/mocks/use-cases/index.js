@@ -47,6 +47,10 @@ class IpfsUseCaseMock {
   async downloadCid() {
     return true
   }
+
+  async getPinClaims() {
+    return true
+  }
 }
 
 class UseCasesMock {
