@@ -412,4 +412,38 @@ describe('#ipfs-use-case', () => {
       await uut.validateSizeAndPayment({ fileSize, tokensBurned })
     })
   })
+
+  describe('#getPinClaims', () => {
+    it('should return the last 20 pin claims', async () => {
+      // Create mock data
+      const pins = []
+      for (let i = 0; i < 40; i++) {
+        pins.push({
+          recordTime: i,
+          proofOfBurnTxid: 'fake-txid',
+          cid: 'fake-cid',
+          claimTxid: 'fake-txid',
+          address: 'fake-address',
+          filename: 'fake-filename',
+          validClaim: true,
+          dataPinned: true,
+          tokensBurned: 0.08335232
+        })
+      }
+
+      // Mock depenedencies and force desired code path.
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves(pins)
+
+      const result = await uut.getPinClaims()
+
+      assert.property(result, 'success')
+      assert.property(result, 'pins')
+
+      assert.equal(result.success, true)
+      assert.equal(result.pins.length, 20)
+
+      // Assert that the newest entry is first.
+      assert.equal(result.pins[0].recordTime, 39)
+    })
+  })
 })

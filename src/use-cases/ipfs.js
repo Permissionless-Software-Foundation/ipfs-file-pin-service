@@ -459,8 +459,8 @@ class IpfsUseCases {
         const thisPin = sortedPins[i]
 
         // Extract selected properties for export.
-        const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned } = thisPin
-        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned }
+        const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime } = thisPin
+        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime }
 
         pins.push(outObj)
       }
