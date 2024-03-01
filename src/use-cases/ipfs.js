@@ -452,11 +452,10 @@ class IpfsUseCases {
       })
 
       let pinLen = 20
-      if(sortedPins.length < 20)
-        pinLen = sortedPins.length
+      if (sortedPins.length < 20) { pinLen = sortedPins.length }
 
       const pins = []
-      for(let i=0; i<pinLen; i++) {
+      for (let i = 0; i < pinLen; i++) {
         pins.push(sortedPins[i])
       }
 
