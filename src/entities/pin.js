@@ -23,6 +23,9 @@ class Pin {
       throw new Error("Property 'address' must be a string!")
     }
 
+    const now = new Date()
+    const recordTime = now.getTime()
+
     const pinData = {
       proofOfBurnTxid,
       cid,
@@ -33,7 +36,8 @@ class Pin {
       tokensBurned,
       address,
       validClaim: null,
-      dataPinned: false
+      dataPinned: false,
+      recordTime
     }
 
     return pinData

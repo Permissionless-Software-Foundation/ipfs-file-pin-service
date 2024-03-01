@@ -445,28 +445,21 @@ class IpfsUseCases {
 
       const Pins = this.adapters.localdb.Pins
 
-      const getPins = (Model) => {
-        return new Promise((resolve, reject) => {
-          const pins = []
-          Model.find({}).sort('-date').exec((err, docs) => {
-            if (err) reject(err)
+      const unsortedPins = await Pins.find({})
 
-            console.log('docs: ', docs)
-            console.log('docs.length: ', docs.length)
-            let pinLen = 20
+      const sortedPins = unsortedPins.sort(function (a, b) {
+        return b.recordTime - a.recordTime
+      })
 
-            if (docs.length < 20) { pinLen = docs.length }
+      let pinLen = 20
+      if(sortedPins.length < 20)
+        pinLen = sortedPins.length
 
-            for (let i = 0; i < pinLen; i++) {
-              pins.push(docs[i])
-            }
-
-            resolve(pins)
-          })
-        })
+      const pins = []
+      for(let i=0; i<pinLen; i++) {
+        pins.push(sortedPins[i])
       }
 
-      const pins = await getPins(Pins)
       console.log('pins: ', pins)
 
       return {
