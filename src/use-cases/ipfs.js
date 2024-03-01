@@ -456,7 +456,13 @@ class IpfsUseCases {
 
       const pins = []
       for (let i = 0; i < pinLen; i++) {
-        pins.push(sortedPins[i])
+        const thisPin = sortedPins[i]
+
+        // Extract selected properties for export.
+        const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned } = thisPin
+        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned }
+
+        pins.push(outObj)
       }
 
       console.log('pins: ', pins)
