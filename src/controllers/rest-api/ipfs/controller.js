@@ -2,6 +2,9 @@
   REST API Controller library for the /ipfs route
 */
 
+// Global npm libraries
+
+// Local libraries
 import wlogger from '../../../adapters/wlogger.js'
 
 class IpfsRESTControllerLib {
@@ -169,7 +172,6 @@ class IpfsRESTControllerLib {
    */
   async getThisNode (ctx) {
     try {
-      // const status = await this.adapters.ipfs.getStatus()
       const thisNode = this.adapters.ipfs.ipfsCoordAdapter.ipfsCoord.thisNode
 
       ctx.body = { thisNode }
