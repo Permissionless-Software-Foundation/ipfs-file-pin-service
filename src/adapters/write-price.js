@@ -39,6 +39,11 @@ class WritePrice {
   // Pass a wallet instance into this library. This function is required to prevent
   // circular dependencies at startup.
   async initialize (inObj = {}) {
+    const { wallet } = inObj
+    if (!wallet) {
+      throw new Error('Wallet instance required when initializing the write-price adapter.')
+    }
+
     // Wait for the BCH wallet to create the wallet.
     await this.wallet.walletInfoPromise
 
