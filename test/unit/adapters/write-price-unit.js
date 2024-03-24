@@ -53,7 +53,7 @@ describe('#write-price', () => {
         await uut.initialize()
 
         assert.fail('Unexpected code path')
-      } catch(err) {
+      } catch (err) {
         assert.include(err.message, 'Wallet instance required when initializing the write-price adapter.')
       }
     })
