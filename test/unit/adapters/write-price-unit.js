@@ -11,7 +11,7 @@ import SlpWallet from 'minimal-slp-wallet'
 // Local libraries
 import WritePrice from '../../../src/adapters/write-price.js'
 import mockDataLib from '../mocks/adapters/write-price-mocks.js'
-// import Wallet from '../../../src/adapters/wallet.js'
+import Wallet from '../../../src/adapters/wallet.adapter.js'
 
 describe('#write-price', () => {
   let uut, sandbox, mockData
@@ -37,17 +37,27 @@ describe('#write-price', () => {
 
   afterEach(() => sandbox.restore())
 
-  // describe('#initialize', () => {
-  //   it('should return true after instantiating wallet', async () => {
-  //     // Mock dependencies and force desired code path
-  //     const wallet = new Wallet()
-  //     await wallet.instanceWalletWithoutInitialization()
-  //
-  //     const result = await uut.initialize({ wallet })
-  //
-  //     assert.equal(result, true)
-  //   })
-  // })
+  describe('#initialize', () => {
+    it('should return true after instantiating wallet', async () => {
+      // Mock dependencies and force desired code path
+      const wallet = new Wallet()
+      await wallet.instanceWalletWithoutInitialization()
+
+      const result = await uut.initialize({ wallet })
+
+      assert.equal(result, true)
+    })
+
+    it('should throw error if wallet adapter is not included', async () => {
+      try {
+        await uut.initialize()
+
+        assert.fail('Unexpected code path')
+      } catch(err) {
+        assert.include(err.message, 'Wallet instance required when initializing the write-price adapter.')
+      }
+    })
+  })
 
   // describe('#updateCurrentRateInBch', () => {
   //   it('should calculate write cost in BCH', async () => {
