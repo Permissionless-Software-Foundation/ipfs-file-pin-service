@@ -111,10 +111,10 @@ export default {
     '@type': 'WebAPI',
     name: ipfsCoordName,
     version,
-    protocol: 'generic-service',
+    protocol: 'ipfs-file-pin-service',
     description:
-      'This is a generic IPFS Serivice Provider that uses JSON RPC over IPFS to communicate with it. This instance has not been customized. Source code: https://github.com/Permissionless-Software-Foundation/ipfs-service-provider',
-    documentation: 'https://ipfs-service-provider.fullstack.cash/',
+      'Helia node that pins IPFS files. Activated by psf-slp-indexer.',
+    documentation: 'https://ipfs-file-pin-service.fullstack.cash/',
     provider: {
       '@type': 'Organization',
       name: 'Permissionless Software Foundation',
