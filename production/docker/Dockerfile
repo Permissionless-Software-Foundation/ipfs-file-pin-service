@@ -15,7 +15,7 @@ RUN apt-get install -y sudo git curl nano gnupg wget
 RUN sudo apt-get install -y ca-certificates curl gnupg
 RUN sudo mkdir -p /etc/apt/keyrings
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
 RUN sudo apt-get update
 RUN sudo apt-get install -y nodejs build-essential
 
@@ -56,7 +56,8 @@ RUN git clone https://github.com/Permissionless-Software-Foundation/ipfs-file-pi
 WORKDIR /home/safeuser/ipfs-file-pin-service
 
 # For development: switch to unstable branch
-RUN git checkout ct-unstable
+#RUN git checkout ct-unstable
+RUN git checkout libp2p
 
 # Install dependencies
 #RUN mkdir .ipfsdata
