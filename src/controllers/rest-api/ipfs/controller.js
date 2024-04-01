@@ -3,6 +3,7 @@
 */
 
 // Global npm libraries
+import mime from 'mime-types'
 
 // Local libraries
 import wlogger from '../../../adapters/wlogger.js'
@@ -26,6 +27,7 @@ class IpfsRESTControllerLib {
     // Encapsulate dependencies
     // this.UserModel = this.adapters.localdb.Users
     // this.userUseCases = this.useCases.user
+    this.mime = mime
 
     // Bind 'this' object to all subfunctions
     this.getStatus = this.getStatus.bind(this)
@@ -194,10 +196,14 @@ class IpfsRESTControllerLib {
 
       // ctx.body = ctx.req.pipe(readStream)
 
-      ctx.set('Content-Type', 'image/jpg')
+      // Lookup the mime type from the filename.
+      const contentType = mime.lookup(filename)
+
+      ctx.set('Content-Type', contentType)
       ctx.set(
         'Content-Disposition',
-        'inline; filename="' + filename + '"'
+        // 'inline; filename="' + filename + '"'
+        `inline; filename="${filename}"`
       )
       ctx.body = readStream
     } catch (err) {

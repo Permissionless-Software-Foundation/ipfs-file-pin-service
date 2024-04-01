@@ -157,7 +157,7 @@ export default {
   reqTokenQty: 0.08335233,
 
   // domainName: 'https://pin.fullstack.cash'
-  domainName: 'http://localhost:5031'
+  domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031'
 
   // END FILE PIN CONFIGURATION
 
