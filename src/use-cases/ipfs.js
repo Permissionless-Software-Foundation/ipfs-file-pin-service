@@ -460,8 +460,11 @@ class IpfsUseCases {
 
         // Extract selected properties for export.
         const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime } = thisPin
-        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime }
 
+        const downloadLink = `${this.config.domainName}/ipfs/download/${cid}`
+        const viewLink = `${this.config.domainName}/ipfs/view/${cid}`
+
+        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime, downloadLink, viewLink }
         pins.push(outObj)
       }
 
