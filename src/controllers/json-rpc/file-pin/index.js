@@ -53,7 +53,7 @@ class FilePinRPC {
           return await this.getFileMetadata(rpcData)
       }
     } catch (err) {
-      console.error('Error in FilePinRPC/rpcRouter()')
+      console.error('Error in FilePinRPC/rpcRouter(): ', err)
       // throw err
 
       return {
@@ -100,7 +100,7 @@ class FilePinRPC {
         message: ''
       }
     } catch (err) {
-      // console.error('Error in getUser()')
+      console.error('Error in getFileMetadata(): ', err)
       // throw err
 
       // Return an error response
