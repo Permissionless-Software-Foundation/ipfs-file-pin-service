@@ -107,8 +107,10 @@ class FilePinRPC {
       const pinModel = await Pins.find({ cid })
       if (pinModel.length > 0) {
         fileMetadata = pinModel[0]
-        delete fileMetadata.pobTxDetails
-        delete fileMetadata.claimTxDetails
+        // delete fileMetadata.pobTxDetails
+        // delete fileMetadata.claimTxDetails
+        fileMetadata.pobTxDetails = {}
+        fileMetadata.claimTxDetails = {}
       }
       console.log('fileMetadata: ', fileMetadata)
 
