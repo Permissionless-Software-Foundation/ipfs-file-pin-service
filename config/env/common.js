@@ -154,7 +154,10 @@ export default {
   // Quantity of tokens required to burn in order to pin 1MB. This
   // default value is overwritten by a lookup of the write price set by the
   // PSF Minting Council
-  reqTokenQty: 0.08335233
+  reqTokenQty: 0.08335233,
+
+  // domainName: 'https://pin.fullstack.cash'
+  domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031'
 
   // END FILE PIN CONFIGURATION
 

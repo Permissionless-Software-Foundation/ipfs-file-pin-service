@@ -3,6 +3,7 @@
 */
 
 // Global npm libraries
+import mime from 'mime-types'
 
 // Local libraries
 import wlogger from '../../../adapters/wlogger.js'
@@ -26,6 +27,7 @@ class IpfsRESTControllerLib {
     // Encapsulate dependencies
     // this.UserModel = this.adapters.localdb.Users
     // this.userUseCases = this.useCases.user
+    this.mime = mime
 
     // Bind 'this' object to all subfunctions
     this.getStatus = this.getStatus.bind(this)
@@ -37,7 +39,7 @@ class IpfsRESTControllerLib {
     this.pinStatus = this.pinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.getThisNode = this.getThisNode.bind(this)
-    this.downloadFile = this.downloadFile.bind(this)
+    this.viewFile = this.viewFile.bind(this)
     this.getPins = this.getPins.bind(this)
   }
 
@@ -181,14 +183,32 @@ class IpfsRESTControllerLib {
     }
   }
 
-  async downloadFile (ctx) {
+  async viewFile (ctx) {
     try {
       const { cid } = ctx.params
 
-      const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
-      return file
+      // const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
+      // return file
+
+      // const cid = ctx.params.cid
+
+      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid })
+
+      // ctx.body = ctx.req.pipe(readStream)
+
+      // Lookup the mime type from the filename.
+      const contentType = mime.lookup(filename)
+
+      ctx.set('Content-Type', contentType)
+      ctx.set(
+        'Content-Disposition',
+        // 'inline; filename="' + filename + '"'
+        `inline; filename="${filename}"`
+      )
+      ctx.body = readStream
     } catch (err) {
-      wlogger.error('Error in ipfs/controller.js/downloadFile(): ', err)
+      // wlogger.error('Error in ipfs/controller.js/viewFile(): ', err)
+      console.log('Error in ipfs/controller.js/viewFile(): ', err)
       this.handleError(ctx, err)
     }
   }
