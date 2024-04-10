@@ -10,6 +10,20 @@ import jsonrpc from 'jsonrpc-lite'
 
 class FilePinRPC {
   constructor (localConfig) {
+    // Dependency Injection.
+    this.adapters = localConfig.adapters
+    if (!this.adapters) {
+      throw new Error(
+        'Instance of Adapters library required when instantiating File Pin JSON RPC Controller.'
+      )
+    }
+    this.useCases = localConfig.useCases
+    if (!this.useCases) {
+      throw new Error(
+        'Instance of Use Cases library required when instantiating File Pin JSON RPC Controller.'
+      )
+    }
+
     // Encapsulate dependencies
     this.jsonrpc = jsonrpc
 
@@ -86,11 +100,16 @@ class FilePinRPC {
       // Throw error if rpcData does not include 'userId' property for target user.
       const cid = rpcData.payload.params.cid
 
+      const Pins = this.adapters.localdb.Pins
+
+      let fileMetadata = await Pins.find({ cid })
+      fileMetadata = fileMetadata[0]
+
       // const user = await this.userLib.getUser({ id: userId })
-      const fileMetadata = {
-        filename: 'test.txt',
-        cid
-      }
+      // const fileMetadata = {
+      //   filename: 'test.txt',
+      //   cid
+      // }
 
       return {
         fileMetadata,
