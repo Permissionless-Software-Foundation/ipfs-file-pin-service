@@ -11,6 +11,7 @@ import wlogger from '../../adapters/wlogger.js'
 import UserController from './users/index.js'
 import AuthController from './auth/index.js'
 import AboutController from './about/index.js'
+import FilePinController from './file-pin/index.js'
 
 let _this
 
@@ -36,6 +37,7 @@ class JSONRPC {
     this.userController = new UserController(localConfig)
     this.authController = new AuthController(localConfig)
     this.aboutController = new AboutController()
+    this.filePinController = new FilePinController(localConfig)
 
     // Cache to store IDs of processed JSON RPC commands. Used to prevent
     // duplicate processing.
@@ -110,6 +112,9 @@ class JSONRPC {
           break
         case 'about':
           retObj = await _this.aboutController.aboutRouter(parsedData)
+          break
+        case 'file-pin':
+          retObj = await _this.filePinController.filePinRouter(parsedData)
       }
 
       // console.log('retObj: ', retObj)
