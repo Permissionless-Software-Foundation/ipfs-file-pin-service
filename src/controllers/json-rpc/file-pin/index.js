@@ -103,7 +103,7 @@ class FilePinRPC {
       const Pins = this.adapters.localdb.Pins
 
       let fileMetadata = await Pins.find({ cid })
-      fileMetadata = fileMetadata[0]
+      // fileMetadata = fileMetadata[0]
       console.log('fileMetadata: ', fileMetadata)
 
       // const user = await this.userLib.getUser({ id: userId })
