@@ -37,7 +37,7 @@ class FilePinRPC {
   // This is a bit different than other router libraries, because there is
   // only one response, which is a string about this node.
   async filePinRouter (rpcData) {
-    console.log('debugging: aboutRouter from ipfs-service-provider triggered')
+    console.log('debugging: filePinRouter from ipfs-file-pin-service triggered')
 
     let endpoint = 'unknown'
     try {
@@ -49,7 +49,7 @@ class FilePinRPC {
       // Route the call based on the value of the method property.
       switch (endpoint) {
         case 'getFileMetadata':
-          await this.rateLimit.limiter(rpcData.from)
+          // await this.rateLimit.limiter(rpcData.from)
           return await this.getFileMetadata(rpcData)
       }
     } catch (err) {
