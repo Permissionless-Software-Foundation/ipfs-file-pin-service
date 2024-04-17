@@ -144,6 +144,8 @@ export default {
     // '/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWFQ11GQ5NubsJGhYZ4X3wrAGimLevxfm6HPExCrMYhpSL'
   ],
 
+  useWebRtc: process.env.USE_WEB_RTC ? process.env.USE_WEB_RTC : false,
+
   // END IPFS CONFIGURATION
 
   // BEGIN FILE PIN CONFIGURATION
