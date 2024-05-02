@@ -473,7 +473,7 @@ class IpfsUseCases {
         pins.push(outObj)
       }
 
-      console.log('pins: ', pins)
+      // console.log('pins: ', pins)
 
       return {
         success: true,
