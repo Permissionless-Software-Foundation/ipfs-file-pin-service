@@ -54,7 +54,7 @@ describe('#ipfs-use-case', () => {
         .onCall(0).resolves([mockData.pobValidTxDetails01])
         .onCall(1).resolves([mockData.claimValidTxDetails01])
       sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
-      sandbox.stub(uut.wallet.bchjs.Util,'sleep').resolves()
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -76,7 +76,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.wallet, 'getTxData')
         .onCall(0).resolves([mockData.pobValidTxDetails01])
         .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.wallet.bchjs.Util,'sleep').resolves()
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -96,7 +96,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.wallet, 'getTxData')
         .onCall(0).resolves([mockData.pobValidTxDetails01])
         .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.wallet.bchjs.Util,'sleep').resolves()
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -114,7 +114,7 @@ describe('#ipfs-use-case', () => {
       try {
         // Mock dependencies and force desired code path
         sandbox.stub(uut.wallet, 'getTxData').rejects(new Error('test error'))
-        sandbox.stub(uut.wallet.bchjs.Util,'sleep').resolves()
+        sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
         const inObj = {
           proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -137,7 +137,7 @@ describe('#ipfs-use-case', () => {
         .onCall(1).resolves([mockData.claimValidTxDetails01])
       sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([])
       sandbox.stub(uut, 'pinCid').resolves()
-      sandbox.stub(uut.wallet.bchjs.Util,'sleep').resolves()
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',

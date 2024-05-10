@@ -68,6 +68,9 @@ class TimerControllers {
   // if one has not already been created.
   async pinCids () {
     try {
+      let now = new Date()
+      console.log(`pinCids() Timer Controller started at ${now.toLocaleString()}`)
+
       const Pins = this.adapters.localdb.Pins
 
       // Get all pins in the database
@@ -82,6 +85,9 @@ class TimerControllers {
 
       const promiseQueueSize = this.useCases.ipfs.promiseQueueSize
       console.log(`Download requested for ${promiseQueueSize} files.`)
+
+      now = new Date()
+      console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
 
       return true
     } catch (err) {
