@@ -243,7 +243,7 @@ class IpfsUseCases {
     try {
       // console.log('pinData: ', pinData)
 
-      const { cid, filename } = pinData
+      const { cid } = pinData
 
       // console.log(`Attempting to pinning CID: ${cid}`)
 
@@ -263,8 +263,8 @@ class IpfsUseCases {
         return true
       }
 
-      const now = new Date()
-      console.log(`Pinning ${filename} with CID ${cid} at ${now.toLocaleString()}`)
+      // const now = new Date()
+      // console.log(`Pinning ${filename} with CID ${cid} at ${now.toLocaleString()}`)
 
       // Returns a promise, be do not await. Fire-and-forget.
       this.retryQueue.addToQueue(this._tryToGetCid, { pinData })
@@ -288,7 +288,7 @@ class IpfsUseCases {
   async _tryToGetCid (inObj = {}) {
     try {
       const { pinData } = inObj
-      const { cid, tokensBurned } = pinData
+      const { cid, tokensBurned, filename } = pinData
       const cidClass = this.CID.parse(cid)
 
       const tracker = this.trackPin(cid)
@@ -298,7 +298,7 @@ class IpfsUseCases {
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
       // fileSize = file.length
-      console.log(`CID ${cid} is ${fileSize} bytes big.`)
+      console.log(`CID ${cid} with filename ${filename} is ${fileSize} bytes big.`)
 
       const now = new Date()
       console.log(`Finished download of ${cid} at ${now.toISOString()}`)
