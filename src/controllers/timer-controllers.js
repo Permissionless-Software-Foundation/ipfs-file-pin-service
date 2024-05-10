@@ -80,6 +80,9 @@ class TimerControllers {
         await this.useCases.ipfs.pinCid(thisPin)
       }
 
+      const promiseQueueSize = this.useCases.ipfs.promiseQueueSize
+      console.log(`Download requested for ${promiseQueueSize} files.`)
+
       return true
     } catch (err) {
       console.error('Error in timer-controllers.js/pinCids(): ', err)

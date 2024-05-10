@@ -51,6 +51,7 @@ class IpfsUseCases {
     this.promiseTracker = {} // track promises for pinning content
     this.promiseTrackerCnt = 0
     this.pinSuccess = 0
+    this.promiseQueueSize = 0
   }
 
   // Process a new pin claim by adding it to the database.
@@ -158,9 +159,6 @@ class IpfsUseCases {
 
       // let fileSize = null
 
-      // const queueSize = this.retryQueue.validationQueue.size
-      // console.log(`Download requested for ${queueSize} files.`)
-
       // If the pin is already being tracked, then skip.
       let tracker
       if (this.pinIsBeingTracked(cid)) {
@@ -225,6 +223,11 @@ class IpfsUseCases {
 
         return false
       }
+
+      // This is used by Timer Controller to report the number of outstanding
+      // files to download.
+      this.promiseQueueSize = this.retryQueue.validationQueue.size
+      // console.log(`Download requested for ${queueSize} files.`)
 
       return true
     } catch (err) {
