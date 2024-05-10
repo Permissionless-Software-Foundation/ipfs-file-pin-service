@@ -143,11 +143,10 @@ class IpfsUseCases {
   async pinCid (pinData = {}) {
     try {
       // console.log('pinData: ', pinData)
-      console.log(`Pinning ${pinData.filename} with CID ${pinData.cid}`)
 
       const { cid, tokensBurned } = pinData
 
-      console.log(`Attempting to pinning CID: ${cid}`)
+      // console.log(`Attempting to pinning CID: ${cid}`)
 
       // Get the file so that we have it locally.
       // console.log(`Getting file ${cid}`)
@@ -155,13 +154,12 @@ class IpfsUseCases {
       const cidClass = this.CID.parse(cid)
       // console.log('cidClass: ', cidClass)
 
-      let now = new Date()
       // console.log(`Starting download of ${cid} at ${now.toISOString()}`)
 
       // let fileSize = null
 
-      const queueSize = this.retryQueue.validationQueue.size
-      console.log(`Download requested for ${queueSize} files.`)
+      // const queueSize = this.retryQueue.validationQueue.size
+      // console.log(`Download requested for ${queueSize} files.`)
 
       // If the pin is already being tracked, then skip.
       let tracker
@@ -171,6 +169,9 @@ class IpfsUseCases {
       } else {
         tracker = this.trackPin(cid)
       }
+
+      let now = new Date()
+      console.log(`Pinning ${pinData.filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)

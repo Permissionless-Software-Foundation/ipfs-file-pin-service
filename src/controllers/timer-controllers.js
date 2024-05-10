@@ -72,6 +72,7 @@ class TimerControllers {
 
       // Get all pins in the database
       const pins = await Pins.find({})
+      console.log(`There are ${pins.length} Pin Claims in the database.`)
 
       for (let i = 0; i < pins.length; i++) {
         const thisPin = pins[i]
