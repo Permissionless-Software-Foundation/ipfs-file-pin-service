@@ -143,6 +143,7 @@ class IpfsUseCases {
   async pinCid (pinData = {}) {
     try {
       // console.log('pinData: ', pinData)
+      console.log(`Pinning ${pinData.filename} with CID ${pinData.cid}`)
 
       const { cid, tokensBurned } = pinData
 
