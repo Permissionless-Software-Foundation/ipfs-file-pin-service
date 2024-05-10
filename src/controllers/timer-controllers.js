@@ -66,7 +66,7 @@ class TimerControllers {
       for (let i = 0; i < pins.length; i++) {
         const thisPin = pins[i]
 
-        await this.useCases.ipfs.pinCid(thisPin)
+        await this.useCases.ipfs.pinCidForTimerController(thisPin)
       }
 
       const promiseQueueSize = this.useCases.ipfs.promiseQueueSize

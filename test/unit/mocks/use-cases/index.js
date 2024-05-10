@@ -51,6 +51,10 @@ class IpfsUseCaseMock {
   async getPinClaims() {
     return true
   }
+
+  async pinCidForTimerController() {
+    return true
+  }
 }
 
 class UseCasesMock {
