@@ -27,41 +27,23 @@ class TimerControllers {
     this.config = config
 
     // Bind 'this' object to all subfunctions.
-    this.exampleTimerFunc = this.exampleTimerFunc.bind(this)
     this.pinCids = this.pinCids.bind(this)
 
-    // this.startTimers()
+    // Encapsulate constants
+    this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
   }
 
   // Start all the time-based controllers.
   startTimers () {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
-    this.optimizeWalletHandle = setInterval(this.exampleTimerFunc, 60000 * 10)
-    this.pinCidsHandle = setInterval(this.pinCids, 60000 * 10)
+    this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
     return true
   }
 
   stopTimers () {
-    clearInterval(this.optimizeWalletHandle)
     clearInterval(this.pinCidsHandle)
-  }
-
-  // Replace this example function with your own timer handler.
-  exampleTimerFunc (negativeTest) {
-    try {
-      console.log('Example timer controller executed.')
-
-      if (negativeTest) throw new Error('test error')
-
-      return true
-    } catch (err) {
-      console.error('Error in exampleTimerFunc(): ', err)
-
-      // Note: Do not throw an error. This is a top-level function.
-      return false
-    }
   }
 
   // Periodically check the database of pins and create a download/pin request
@@ -70,6 +52,10 @@ class TimerControllers {
     try {
       let now = new Date()
       console.log(`pinCids() Timer Controller started at ${now.toLocaleString()}`)
+
+      // Stop the timer interval from executing if a previous instance is still
+      // executing.
+      clearInterval(this.pinCidsHandle)
 
       const Pins = this.adapters.localdb.Pins
 
@@ -88,6 +74,9 @@ class TimerControllers {
 
       now = new Date()
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
+
+      // Restart the timer interval after it completes.
+      this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
       return true
     } catch (err) {

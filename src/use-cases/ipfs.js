@@ -171,7 +171,9 @@ class IpfsUseCases {
       let now = new Date()
       console.log(`Pinning ${pinData.filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
-      const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      // Do not await the promise returned by the queue.
+      const fileSize = this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
       // fileSize = file.length

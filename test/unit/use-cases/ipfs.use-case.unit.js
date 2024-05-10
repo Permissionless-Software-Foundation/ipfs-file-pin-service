@@ -255,7 +255,7 @@ describe('#ipfs-use-case', () => {
     it('should catch and throw errors', async () => {
       try {
         // Mock dependencies and force desired code path
-        sandbox.stub(uut.retryQueue, 'addToQueue').rejects(new Error('test error'))
+        sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
 
         const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
         await uut.pinCid({ cid })
