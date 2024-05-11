@@ -502,8 +502,11 @@ class IpfsUseCases {
       isValid: true // Assume valid
     }
 
-    this.pinTracker[cid] = obj
-    this.pinTrackerCnt++
+    if(!this.pinTracker[cid]) {
+      this.pinTracker[cid] = obj
+      this.pinTrackerCnt++
+    }
+
 
     // console.log(`pinTracker has ${this.pinTrackerCnt} entries.`)
 

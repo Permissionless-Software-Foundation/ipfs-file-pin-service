@@ -30,7 +30,7 @@ class TimerControllers {
     this.pinCids = this.pinCids.bind(this)
 
     // Encapsulate constants
-    this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
+    this.PIN_CID_INTERVAL = 60000 * 5 // 5 minutes
   }
 
   // Start all the time-based controllers.
@@ -63,7 +63,7 @@ class TimerControllers {
       const pins = await Pins.find({})
       console.log(`There are ${pins.length} Pin Claims in the database.`)
 
-      const numTrackedPins = this.useCases.ipfs.pinTrackerCnt.length
+      const numTrackedPins = this.useCases.ipfs.pinTrackerCnt
       console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)
 
       for (let i = 0; i < pins.length; i++) {
