@@ -172,7 +172,7 @@ class IpfsUseCases {
       }
 
       let now = new Date()
-      console.log(`Pinning ${filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
+      console.log(`Validating pin claim for ${filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
       // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
