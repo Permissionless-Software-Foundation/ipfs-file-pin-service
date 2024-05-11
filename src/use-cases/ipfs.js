@@ -317,6 +317,14 @@ class IpfsUseCases {
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       // const fileSize = await this._getCid({ cid: cidClass })
 
+      // If filesize is undefined, then the download was not successful.
+      //
+      if (!fileSize) {
+        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+        delete this.pinTracker[cid]
+        this.pinTrackerCnt--
+      }
+
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
       // fileSize = file.length
