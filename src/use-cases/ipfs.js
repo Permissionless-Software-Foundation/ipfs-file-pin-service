@@ -268,7 +268,8 @@ class IpfsUseCases {
       // console.log(`Pinning ${filename} with CID ${cid} at ${now.toLocaleString()}`)
 
       // Returns a promise, be do not await. Fire-and-forget.
-      this.retryQueue.addToQueue(this._tryToGetCid, { pinData })
+      // this.retryQueue.addToQueue(this._tryToGetCid, { pinData })
+      this._tryToGetCid({ pinData })
 
       // This is used by Timer Controller to report the number of outstanding
       // files to download.
@@ -296,7 +297,8 @@ class IpfsUseCases {
       // the same file twice.
       const tracker = this.trackPin(cid)
 
-      const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      // const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      const fileSize = await this._getCid({ cid: cidClass })
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
