@@ -69,8 +69,8 @@ class TimerControllers {
         await this.useCases.ipfs.pinCidForTimerController(thisPin)
       }
 
-      const promiseQueueSize = this.useCases.ipfs.promiseQueueSize
-      console.log(`Download requested for ${promiseQueueSize} files.`)
+      const promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+      console.log(`${promiseQueueSize} promises in queue.`)
 
       now = new Date()
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)

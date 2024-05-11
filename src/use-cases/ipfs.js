@@ -53,7 +53,7 @@ class IpfsUseCases {
     this.promiseTracker = {} // track promises for pinning content
     this.promiseTrackerCnt = 0
     this.pinSuccess = 0
-    this.promiseQueueSize = 0
+    // this.promiseQueueSize = 0
   }
 
   // Process a new pin claim by adding it to the database.
@@ -173,6 +173,7 @@ class IpfsUseCases {
       let now = new Date()
       console.log(`Pinning ${pinData.filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
+      // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
@@ -229,7 +230,7 @@ class IpfsUseCases {
 
       // This is used by Timer Controller to report the number of outstanding
       // files to download.
-      this.promiseQueueSize = this.retryQueue.validationQueue.size
+      // this.promiseQueueSize = this.retryQueue.validationQueue.size
       // console.log(`Download requested for ${queueSize} files.`)
 
       return true
@@ -271,7 +272,7 @@ class IpfsUseCases {
 
       // This is used by Timer Controller to report the number of outstanding
       // files to download.
-      this.promiseQueueSize = this.retryQueue.validationQueue.size
+      // this.promiseQueueSize = this.retryQueue.validationQueue.size
       // console.log(`Download requested for ${queueSize} files.`)
 
       return true
@@ -291,6 +292,8 @@ class IpfsUseCases {
       const { cid, tokensBurned, filename } = pinData
       const cidClass = this.CID.parse(cid)
 
+      // Add the CID to the tracker, so that we don't try to download or pin
+      // the same file twice.
       const tracker = this.trackPin(cid)
 
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
@@ -301,7 +304,7 @@ class IpfsUseCases {
       console.log(`CID ${cid} with filename ${filename} is ${fileSize} bytes big.`)
 
       const now = new Date()
-      console.log(`Finished download of ${cid} at ${now.toISOString()}`)
+      console.log(`Finished download of ${filename}, ${cid} at ${now.toISOString()}`)
 
       // TODO: Replace this with a validation function.
       // const isValid = true
