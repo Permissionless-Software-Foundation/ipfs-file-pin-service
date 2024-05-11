@@ -148,7 +148,7 @@ class IpfsUseCases {
     try {
       // console.log('pinData: ', pinData)
 
-      const { cid, tokensBurned } = pinData
+      const { cid, tokensBurned, filename } = pinData
 
       // console.log(`Attempting to pinning CID: ${cid}`)
 
@@ -176,6 +176,14 @@ class IpfsUseCases {
 
       // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+
+      if (!fileSize) {
+        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+        delete this.pinTracker[cid]
+        this.pinTrackerCnt--
+
+        return false
+      }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
@@ -323,6 +331,8 @@ class IpfsUseCases {
         console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
         this.pinTrackerCnt--
+
+        return false
       }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
