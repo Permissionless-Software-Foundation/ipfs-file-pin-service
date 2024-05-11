@@ -290,12 +290,28 @@ class IpfsUseCases {
   async _tryToGetCid (inObj = {}) {
     try {
       const { pinData } = inObj
-      const { cid, tokensBurned, filename } = pinData
+      const { cid, tokensBurned, filename, dataPinned } = pinData
       const cidClass = this.CID.parse(cid)
 
       // Add the CID to the tracker, so that we don't try to download or pin
       // the same file twice.
       const tracker = this.trackPin(cid)
+
+      // If the model in the database says the file is already pinned and
+      // validated, then ensure the file is actually pinned and exit.
+      if (dataPinned) {
+        // Pin the file
+        try {
+          await this.adapters.ipfs.ipfs.pins.add(cidClass)
+        } catch (err) {
+          if (err.message.includes('Already pinned')) {
+            console.log(`CID ${cid} already pinned.`)
+          } else {
+            throw err
+          }
+        }
+        return true
+      }
 
       // const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
       const fileSize = await this._getCid({ cid: cidClass })
