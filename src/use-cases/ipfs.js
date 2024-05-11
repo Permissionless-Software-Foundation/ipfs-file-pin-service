@@ -31,7 +31,8 @@ class IpfsUseCases {
     })
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
-      concurrency: 20
+      concurrency: 20,
+      timeout: 60000 * 2 // 2 minute timeout
     })
     this.pinEntity = new PinEntity()
     this.CID = CID
@@ -502,11 +503,10 @@ class IpfsUseCases {
       isValid: true // Assume valid
     }
 
-    if(!this.pinTracker[cid]) {
+    if (!this.pinTracker[cid]) {
       this.pinTracker[cid] = obj
       this.pinTrackerCnt++
     }
-
 
     // console.log(`pinTracker has ${this.pinTrackerCnt} entries.`)
 

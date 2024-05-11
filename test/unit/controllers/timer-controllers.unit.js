@@ -71,6 +71,11 @@ describe('#Timer-Controllers', () => {
       // Mock dependencies and force desired code path
       sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
       sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: {
+          size: 1
+        }
+      }
 
       const result = await uut.pinCids()
 
