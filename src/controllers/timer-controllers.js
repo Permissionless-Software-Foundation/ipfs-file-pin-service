@@ -30,7 +30,7 @@ class TimerControllers {
     this.pinCids = this.pinCids.bind(this)
 
     // Encapsulate constants
-    this.PIN_CID_INTERVAL = 60000 * 5 // 5 minutes
+    this.PIN_CID_INTERVAL = 60000 * 30 // 5 minutes
   }
 
   // Start all the time-based controllers.

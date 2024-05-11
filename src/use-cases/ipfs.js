@@ -32,7 +32,7 @@ class IpfsUseCases {
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
       concurrency: 20,
-      timeout: 60000 * 2 // 2 minute timeout
+      timeout: 60000 * 5 // 5 minute timeout
     })
     this.pinEntity = new PinEntity()
     this.CID = CID
@@ -172,13 +172,13 @@ class IpfsUseCases {
       }
 
       let now = new Date()
-      console.log(`Pinning ${pinData.filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
+      console.log(`Pinning ${filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
       // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
 
-      if (!fileSize) {
-        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+      if (!fileSize && fileSize !== 0) {
+        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
         this.pinTrackerCnt--
 
@@ -327,7 +327,7 @@ class IpfsUseCases {
 
       // If filesize is undefined, then the download was not successful.
       //
-      if (!fileSize) {
+      if (!fileSize && fileSize !== 0) {
         console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
         this.pinTrackerCnt--
@@ -442,7 +442,7 @@ class IpfsUseCases {
       await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
-      console.log('file stats: ', stats)
+      // console.log('file stats: ', stats)
 
       return Number(stats.fileSize)
 
