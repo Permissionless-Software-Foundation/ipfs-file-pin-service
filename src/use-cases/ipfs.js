@@ -328,7 +328,7 @@ class IpfsUseCases {
       // If filesize is undefined, then the download was not successful.
       //
       if (!fileSize && fileSize !== 0) {
-        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
         this.pinTrackerCnt--
 

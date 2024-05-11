@@ -59,6 +59,9 @@ class TimerControllers {
 
       const Pins = this.adapters.localdb.Pins
 
+      let promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+      console.log(`${promiseQueueSize} promises in queue at start of Timer Controller.`)
+
       // Get all pins in the database
       const pins = await Pins.find({})
       console.log(`There are ${pins.length} Pin Claims in the database.`)
@@ -72,8 +75,8 @@ class TimerControllers {
         await this.useCases.ipfs.pinCidForTimerController(thisPin)
       }
 
-      const promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size
-      console.log(`${promiseQueueSize} promises in queue.`)
+      promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+      console.log(`${promiseQueueSize} promises in queue at end of Timer Controller.`)
 
       now = new Date()
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
