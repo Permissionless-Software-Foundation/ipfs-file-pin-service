@@ -31,7 +31,7 @@ class IpfsUseCases {
     })
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
-      concurrency: 6
+      concurrency: 20
     })
     this.pinEntity = new PinEntity()
     this.CID = CID
@@ -50,8 +50,8 @@ class IpfsUseCases {
     this._tryToGetCid = this._tryToGetCid.bind(this)
 
     // State
-    this.promiseTracker = {} // track promises for pinning content
-    this.promiseTrackerCnt = 0
+    this.pinTracker = {} // track promises for pinning content
+    this.pinTrackerCnt = 0
     this.pinSuccess = 0
     // this.promiseQueueSize = 0
   }
@@ -192,7 +192,7 @@ class IpfsUseCases {
       // }
       const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
 
-      this.promiseTrackerCnt--
+      this.pinTrackerCnt--
       tracker.isValid = isValid
       tracker.completed = true
 
@@ -260,7 +260,7 @@ class IpfsUseCases {
 
       // If the pin is already being tracked, then skip.
       if (this.pinIsBeingTracked(cid)) {
-        console.log('This pin is already being tracked. Skipping.')
+        // console.log('This pin is already being tracked. Skipping.')
         return true
       }
 
@@ -304,11 +304,11 @@ class IpfsUseCases {
         try {
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
         } catch (err) {
-          if (err.message.includes('Already pinned')) {
-            console.log(`CID ${cid} already pinned.`)
-          } else {
-            throw err
-          }
+          // if (err.message.includes('Already pinned')) {
+          //   console.log(`CID ${cid} already pinned.`)
+          // } else {
+          //   throw err
+          // }
         }
         return true
       }
@@ -332,7 +332,7 @@ class IpfsUseCases {
       // }
       const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
 
-      this.promiseTrackerCnt--
+      this.pinTrackerCnt--
       tracker.isValid = isValid
       tracker.completed = true
 
@@ -502,17 +502,17 @@ class IpfsUseCases {
       isValid: true // Assume valid
     }
 
-    this.promiseTracker[cid] = obj
-    this.promiseTrackerCnt++
+    this.pinTracker[cid] = obj
+    this.pinTrackerCnt++
 
-    console.log(`promiseTracker has ${this.promiseTrackerCnt} entries.`)
+    // console.log(`pinTracker has ${this.pinTrackerCnt} entries.`)
 
-    return this.promiseTracker[cid]
+    return this.pinTracker[cid]
   }
 
   // Returns true if the CID is already being tracked. Otherwise returns false.
   pinIsBeingTracked (cid) {
-    const thisPromise = this.promiseTracker[cid]
+    const thisPromise = this.pinTracker[cid]
 
     if (thisPromise) return true
 

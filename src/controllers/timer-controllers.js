@@ -63,6 +63,9 @@ class TimerControllers {
       const pins = await Pins.find({})
       console.log(`There are ${pins.length} Pin Claims in the database.`)
 
+      const numTrackedPins = this.useCases.ipfs.pinTrackerCnt.length
+      console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)
+
       for (let i = 0; i < pins.length; i++) {
         const thisPin = pins[i]
 
