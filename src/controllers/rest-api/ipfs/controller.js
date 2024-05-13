@@ -149,9 +149,9 @@ class IpfsRESTControllerLib {
   // so I had to create my own way for downloading pinned files of HTTP.
   async downloadCid (ctx) {
     try {
-      const cid = ctx.params.cid
+      const { cid, name } = ctx.params
 
-      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid })
+      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid, name })
 
       ctx.body = readStream
       ctx.attachment(filename)
@@ -185,14 +185,14 @@ class IpfsRESTControllerLib {
 
   async viewFile (ctx) {
     try {
-      const { cid } = ctx.params
+      const { cid, name } = ctx.params
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cid)
       // return file
 
       // const cid = ctx.params.cid
 
-      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid })
+      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid, name, listDir: true })
 
       // ctx.body = ctx.req.pipe(readStream)
 
