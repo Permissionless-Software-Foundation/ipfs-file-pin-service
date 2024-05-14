@@ -180,8 +180,8 @@ class IpfsAdapter {
       if (process.env.CONNECT_PREF === 'direct') {
         transports = [
           tcp(),
-          webSockets(),
-          webRTC()
+          webSockets()
+          // webRTC()
         ]
       } else {
         transports = [
@@ -190,9 +190,13 @@ class IpfsAdapter {
           circuitRelayTransport({
             discoverRelays: 3,
             reservationConcurrency: 3
-          }),
-          webRTC()
+          })
+          // webRTC()
         ]
+      }
+
+      if (this.config.useWebRtc) {
+        transports.push(webRTC())
       }
 
       // libp2p is the networking layer that underpins Helia

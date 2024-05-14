@@ -47,10 +47,10 @@ class IpfsRESTControllerLib {
    * @api {get} /ipfs Get status on IPFS infrastructure
    * @apiPermission public
    * @apiName GetIpfsStatus
-   * @apiGroup REST BCH
+   * @apiGroup REST IPFS
    *
    * @apiExample Example usage:
-   * curl -H "Content-Type: application/json" -X GET localhost:5001/ipfs
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs
    *
    */
   async getStatus (ctx) {
@@ -166,10 +166,10 @@ class IpfsRESTControllerLib {
    * @api {get} /ipfs/node Get a copy of the thisNode object from helia-coord
    * @apiPermission public
    * @apiName GetThisNode
-   * @apiGroup REST BCH
+   * @apiGroup REST IPFS
    *
    * @apiExample Example usage:
-   * curl -H "Content-Type: application/json" -X GET localhost:5001/ipfs/node
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/node
    *
    */
   async getThisNode (ctx) {
@@ -213,6 +213,16 @@ class IpfsRESTControllerLib {
     }
   }
 
+  /**
+   * @api {get} /ipfs/pins Get metadata on the the last 20 pinned items
+   * @apiPermission public
+   * @apiName GetPins
+   * @apiGroup REST IPFS
+   *
+   * @apiExample Example usage:
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/pins
+   *
+   */
   // Get a paginated list of the latest pin claims.
   async getPins (ctx) {
     try {
