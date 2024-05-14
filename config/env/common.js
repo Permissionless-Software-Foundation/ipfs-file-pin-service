@@ -119,7 +119,10 @@ export default {
       '@type': 'Organization',
       name: 'Permissionless Software Foundation',
       url: 'https://PSFoundation.cash'
-    }
+    },
+
+    // If this node has an IP4 address or domain name used to provide a REST API.
+    web2Api: process.env.WEB2_API ? process.env.WEB2_API : null
   },
 
   // IPFS Ports
@@ -143,6 +146,8 @@ export default {
     // v2 Circuit Relay server (FullStack.cash)
     // '/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWFQ11GQ5NubsJGhYZ4X3wrAGimLevxfm6HPExCrMYhpSL'
   ],
+
+  useWebRtc: process.env.USE_WEB_RTC ? process.env.USE_WEB_RTC : false,
 
   // END IPFS CONFIGURATION
 
