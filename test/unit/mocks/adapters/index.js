@@ -7,6 +7,10 @@ async function * asyncGenerator1() {
   yield Buffer.from('0x02', "hex")
 }
 
+async function * asyncGenerator2() {
+  yield {path: 'test'}
+}
+
 class IpfsAdapter {
   constructor () {
     this.ipfs = {
@@ -20,7 +24,8 @@ class IpfsAdapter {
       fs: {
         addFile: async () => {},
         stat: async () => {},
-        cat: () => asyncGenerator1()
+        cat: () => asyncGenerator1(),
+        ls: () => asyncGenerator2()
       },
       blockstore: {
         get: async () => {},

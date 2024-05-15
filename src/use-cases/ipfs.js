@@ -602,7 +602,7 @@ class IpfsUseCases {
           // List all paths excluding root path.
           if (cont.path !== cid) {
             // Add links to the gateway with the format  cid/:filename
-            stream.push(`<a href='http://localhost:${this.config.port}/ipfs/view/${cid}/${cont.name}' >/${cont.name} ( CID:  ${cont.cid} )</a><hr />`)
+            stream.push(`<a href='http://${this.config.domainName}/ipfs/view/${cid}/${cont.name}' >/${cont.name} ( CID:  ${cont.cid} )</a><hr />`)
           }
         }
 

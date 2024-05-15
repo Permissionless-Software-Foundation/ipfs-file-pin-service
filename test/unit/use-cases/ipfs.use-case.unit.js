@@ -398,6 +398,7 @@ describe('#ipfs-use-case', () => {
         dataPinned: true,
         filename: 'test.txt'
       }])
+      // sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'ls').resolves({})
 
       const result = await uut.downloadCid({ cid })
       // console.log('result: ', result)
