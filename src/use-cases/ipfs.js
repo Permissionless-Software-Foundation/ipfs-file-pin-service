@@ -6,7 +6,7 @@
 import Wallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
-import { Duplex } from 'stream'
+import Stream, { Duplex } from 'stream'
 
 // Local libraries
 import PinEntity from '../entities/pin.js'
@@ -562,8 +562,7 @@ class IpfsUseCases {
   // Download a pinned file, given its CID.
   async downloadCid (inObj = {}) {
     try {
-      const { cid } = inObj
-
+      const { cid, name, listDir } = inObj
       if (!cid) throw new Error('CID is undefined')
 
       const Pins = this.adapters.localdb.Pins
@@ -581,9 +580,58 @@ class IpfsUseCases {
 
       const helia = this.adapters.ipfs.ipfs
 
+      // list cid content
+      const contentArray = []
+      for await (const file of helia.fs.ls(cid)) {
+        contentArray.push(file)
+      }
+      console.log('contentArray', contentArray)
+
+      // If a name is not provided, detect if the provided cid is a directory or a single file.
+      /**
+      *  If the cid is a directory
+       * The next block of code sends a html page with a list of links with the file names into the directory.
+       * Skipping this code delivers directly the first file detected in the directory.
+       */
+      const isDir = contentArray[0].path.match('/') // TODO : looking for a better way to detect if is a directory
+      // 'listDir' is a flag to ignore this code on /download endpoint.
+      if (isDir && !name && listDir) {
+        const stream = new Stream.Readable({ read () { } })
+        for (let i = 0; i < contentArray.length; i++) {
+          const cont = contentArray[i]
+          // List all paths excluding root path.
+          if (cont.path !== cid) {
+            // Add links to the gateway with the format  cid/:filename
+            stream.push(`<a href='http://${this.config.domainName}/ipfs/view/${cid}/${cont.name}' >/${cont.name} ( CID:  ${cont.cid} )</a><hr />`)
+          }
+        }
+
+        stream.push(null)
+        // return fileName as html because the controller the library <mime.lookup> sends it as html
+        return { filename: contentArray[0].name + '.html', readStream: stream }
+      }
+
+      let fullCid = cid
+      // if endpoint path does not have a provided name, looking into content array for
+      // file names.
+      if (!name) {
+        for (let i = 0; i < contentArray.length; i++) {
+          const cont = contentArray[i]
+          // if a content name is different than the provided cid, possibly means the provided cid is a directory
+          if (cont.name !== cid) {
+            // Choose the first file found into ipfs node.
+            fullCid = `${cid}/${cont.name}`
+            break
+          }
+        }
+      } else {
+        // if the endpoint path its  /cid/:filename
+        fullCid = `${cid}/${name}`
+      }
+
       // Convert the file to a Buffer.
       const fileChunks = []
-      for await (const chunk of helia.fs.cat(cid)) {
+      for await (const chunk of helia.fs.cat(fullCid)) {
         fileChunks.push(chunk)
       }
       const fileBuf = Buffer.concat(fileChunks)
