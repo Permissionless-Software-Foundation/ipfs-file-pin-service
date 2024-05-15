@@ -585,7 +585,7 @@ class IpfsUseCases {
       for await (const file of helia.fs.ls(cid)) {
         contentArray.push(file)
       }
-      // console.log('contentArray', contentArray)
+      console.log('contentArray', contentArray)
 
       // If a name is not provided, detect if the provided cid is a directory or a single file.
       /**
