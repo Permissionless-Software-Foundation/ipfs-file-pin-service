@@ -117,6 +117,7 @@ class IpfsUseCases {
       // TODO: Check to see CID is not already in database.
       const existingModel = await Pins.find({ cid })
       if (existingModel.length) {
+        console.log(`A database model for CID ${cid} already exists.`)
         return {
           success: true,
           details: 'CID already being tracked by database'
