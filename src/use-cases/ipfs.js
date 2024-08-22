@@ -25,7 +25,9 @@ class IpfsUseCases {
     }
 
     // Encapsulate dependencies
-    if(config.walletInterface === 'web2') {
+
+    // Switch between web 2 and web 3 interface.
+    if (config.walletInterface === 'web2') {
       this.wallet = new Wallet(undefined, {
         interface: 'rest-api',
         restURL: config.apiServer
