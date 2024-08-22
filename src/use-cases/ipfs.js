@@ -25,10 +25,18 @@ class IpfsUseCases {
     }
 
     // Encapsulate dependencies
-    this.wallet = new Wallet(undefined, {
-      interface: 'consumer-api',
-      restURL: 'https://free-bch.fullstack.cash'
-    })
+    if(config.walletInterface === 'web2') {
+      this.wallet = new Wallet(undefined, {
+        interface: 'rest-api',
+        restURL: config.apiServer
+      })
+    } else {
+      this.wallet = new Wallet(undefined, {
+        interface: 'consumer-api',
+        restURL: 'https://free-bch.fullstack.cash'
+      })
+    }
+
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
       concurrency: 20,
@@ -61,6 +69,9 @@ class IpfsUseCases {
   // This function is called by the REST API /ipfs/pin-claim controller.
   async processPinClaim (inObj = {}) {
     try {
+      console.log('processPinClaim() this.wallet.bchjs.restURL: ', this.wallet.bchjs.restURL)
+      console.log('processPinClaim() this.wallet.ar.interface: ', this.wallet.ar.interface)
+
       console.log('processPinClaim() inObj: ', inObj)
       const { proofOfBurnTxid, cid, claimTxid, filename, address } = inObj
 
