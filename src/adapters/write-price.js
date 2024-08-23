@@ -12,10 +12,20 @@ import WritePriceModel from './localdb/models/write-price.js'
 class WritePrice {
   constructor (localConfig = {}) {
     // Encapsulate dependencies
-    this.wallet = new SlpWallet(undefined, {
-      interface: 'consumer-api',
-      restURL: 'https://free-bch.fullstack.cash'
-    })
+
+    // Switch between web 2 and web 3 interface.
+    if (config.walletInterface === 'web2') {
+      this.wallet = new SlpWallet(undefined, {
+        interface: 'rest-api',
+        restURL: config.apiServer
+      })
+    } else {
+      this.wallet = new SlpWallet(undefined, {
+        interface: 'consumer-api',
+        restURL: 'https://free-bch.fullstack.cash'
+      })
+    }
+
     this.bchjs = undefined // placeholder
     this.ps009 = null // placeholder
     this.axios = axios
