@@ -264,7 +264,7 @@ class IpfsUseCases {
           console.log('existingModel: ', existingModel)
           await existingModel.remove()
           console.log(`Database model for ${cid} deleted.`)
-        } catch(err) {
+        } catch (err) {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
         }
 
