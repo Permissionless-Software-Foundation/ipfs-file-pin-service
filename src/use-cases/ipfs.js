@@ -127,20 +127,36 @@ class IpfsUseCases {
 
       const Pins = this.adapters.localdb.Pins
 
-      // TODO: Check to see CID is not already in database.
-      const existingModel = await Pins.find({ cid })
-      if (existingModel.length) {
-        console.log(`A database model for CID ${cid} already exists.`)
-        return {
-          success: true,
-          details: 'CID already being tracked by database'
-        }
-      }
+      // Code below commented out because of the following corner cases:
+      // - If CID was previously submitted with too small of PoB, the claim
+      //   can be re-submitted with proper PoB.
+      // - Same CID is re-submitted to renew the pinning for another year.
+      // Check to see CID is not already in database.
+      let dbModel = await Pins.findOne({ cid })
+      if (dbModel) {
+        console.log(`A database model for CID ${cid} already exists. Existing state:`)
+        console.log(`validClaim: ${dbModel.validClaim}`)
+        console.log(`dataPinned: ${dbModel.dataPinned}`)
 
-      // Create the database model for this pin claim.
-      const dbModel = new Pins(dbModelInput)
-      await dbModel.save()
-      console.log('Pin Claim added to database.')
+        if (dbModel.validClaim && !dbModel.dataPinned) {
+          console.log(`CID ${cid} already has valid pin claim and is awaiting download.`)
+          return {
+            success: true,
+            details: 'CID already has valid pin claim and is awaiting download.'
+          }
+        } else if (dbModel.validClaim && dbModel.dataPinned) {
+          console.log(`CID ${cid} already has valid pin claim. It has already been downloaded and pinned.`)
+          return {
+            success: true,
+            details: 'CID already has valid pin claim. It has already been downloaded and pinned.'
+          }
+        }
+      } else {
+        // Create the database model for this pin claim.
+        dbModel = new Pins(dbModelInput)
+        await dbModel.save()
+        console.log('Pin Claim added to database.')
+      }
 
       // Do not await, so that the process is not blocked
       this.pinCid(dbModel)
@@ -192,7 +208,7 @@ class IpfsUseCases {
       const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
 
       if (!fileSize && fileSize !== 0) {
-        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
         this.pinTrackerCnt--
 
@@ -239,10 +255,25 @@ class IpfsUseCases {
         await pinData.save()
       } else {
         // If the file does meet the size requirements, then unpin it.
-        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes. Unpinning file.`)
+        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper Pob. Unpinning file.`)
 
         // Delete the file from the blockstore
         await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+
+        // This code commented out, because I think a better way to handle this
+        // use-case is to allow retry of the CID if the database exists but
+        // the validClaim property is false.
+        // try {
+        //   // Remove pin from database, so that the same file can be pinned
+        //   // again with a larger PoB.
+        //   const Pins = this.adapters.localdb.Pins
+        //   const existingModel = await Pins.findOne({ cid })
+        //   console.log('existingModel: ', existingModel)
+        //   await existingModel.remove()
+        //   console.log(`Database model for ${cid} deleted.`)
+        // } catch(err) {
+        //   console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
+        // }
 
         pinData.dataPinned = false
         pinData.validClaim = false
@@ -421,22 +452,28 @@ class IpfsUseCases {
         return false
       }
 
-      // Get the current price of the PSF token.
-      // const result = await this.axios.get(`https://psfoundation.cash/price`)
-      // console.log('result.data: ', result.data)
-
       // Get the cost in PSF tokens to store 1MB
       const writePrice = await this.adapters.writePrice.getMcWritePrice()
       console.log('writePrice: ', writePrice)
 
       // Calculate costs in PSF tokens for this pin request.
-      const minCost = writePrice
-      console.log('fileSize: ', fileSize)
+      // const minCost = writePrice
+      // console.log('fileSize: ', fileSize)
+      // const mbCost = fileSize / 1000000 * writePrice
+      // console.log(`minCost: ${writePrice}, mbCost: ${mbCost}`)
+      //
+      // // Validate that enough PSF tokens were paid for this pin.
+      // if (tokensBurned < minCost && tokensBurned < mbCost) {
+      //   return false
+      // }
+
+      // Calculate costs in PSF tokens for this pin request.
       const mbCost = fileSize / 1000000 * writePrice
-      console.log(`minCost: ${writePrice}, mbCost: ${mbCost}`)
+      const minCost = mbCost * 0.98
 
       // Validate that enough PSF tokens were paid for this pin.
-      if (tokensBurned < minCost && tokensBurned < mbCost) {
+      if (tokensBurned < minCost) {
+        console.error(`Tokens burned were ${tokensBurned}, but required cost is ${mbCost}`)
         return false
       }
 
@@ -453,6 +490,7 @@ class IpfsUseCases {
     const { cid } = inObj
 
     try {
+      console.log(`Trying to download CID ${cid}...`)
       await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
