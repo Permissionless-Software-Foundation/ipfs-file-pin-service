@@ -223,12 +223,8 @@ class IpfsUseCases {
       now = new Date()
       console.log(`Finished download of ${cid} at ${now.toISOString()}`)
 
-      // TODO: Replace this with a validation function.
-      // const isValid = true
-      // let isValid = false
-      // if (fileSize < this.config.maxPinSize) {
-      //   isValid = true
-      // }
+      // Validate that the Pin Claim has appropriate payment, and is under max
+      // size requirement.
       const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
 
       this.pinTrackerCnt--
@@ -260,20 +256,17 @@ class IpfsUseCases {
         // Delete the file from the blockstore
         await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
 
-        // This code commented out, because I think a better way to handle this
-        // use-case is to allow retry of the CID if the database exists but
-        // the validClaim property is false.
-        // try {
-        //   // Remove pin from database, so that the same file can be pinned
-        //   // again with a larger PoB.
-        //   const Pins = this.adapters.localdb.Pins
-        //   const existingModel = await Pins.findOne({ cid })
-        //   console.log('existingModel: ', existingModel)
-        //   await existingModel.remove()
-        //   console.log(`Database model for ${cid} deleted.`)
-        // } catch(err) {
-        //   console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
-        // }
+        try {
+          // Remove pin from database, so that it does not keep getting downloaded
+          // and pinning retried.
+          const Pins = this.adapters.localdb.Pins
+          const existingModel = await Pins.findOne({ cid })
+          console.log('existingModel: ', existingModel)
+          await existingModel.remove()
+          console.log(`Database model for ${cid} deleted.`)
+        } catch (err) {
+          console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
+        }
 
         pinData.dataPinned = false
         pinData.validClaim = false
