@@ -613,7 +613,7 @@ class IpfsUseCases {
       const Pins = this.adapters.localdb.Pins
       let existingModel = await Pins.find({ cid })
       existingModel = existingModel[0]
-      // console.log('existingModel: ', existingModel)
+      console.log('existingModel: ', existingModel)
 
       if (!existingModel) {
         throw new Error(`Database model for CID ${cid} does not exist.`)
@@ -630,7 +630,7 @@ class IpfsUseCases {
       for await (const file of helia.fs.ls(cid)) {
         contentArray.push(file)
       }
-      console.log('contentArray', contentArray)
+      // console.log('contentArray', contentArray)
 
       // If a name is not provided, detect if the provided cid is a directory or a single file.
       /**
