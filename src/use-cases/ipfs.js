@@ -613,7 +613,14 @@ class IpfsUseCases {
       const Pins = this.adapters.localdb.Pins
       let existingModel = await Pins.find({ cid })
       existingModel = existingModel[0]
-      console.log('existingModel: ', existingModel)
+      // console.log('existingModel: ', existingModel)
+
+      // Display summary debug data on the model.
+      try {
+        const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime } = existingModel
+        const formattedModel = { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime, cid, filename: existingModel.filename }
+        console.log(`db model data: ${JSON.stringify(formattedModel, null, 2)}`)
+      } catch (err) {}
 
       if (!existingModel) {
         throw new Error(`Database model for CID ${cid} does not exist.`)
