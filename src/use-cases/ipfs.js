@@ -417,6 +417,7 @@ class IpfsUseCases {
 
         // Delete the file from the blockstore
         await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+        console.log(`Deleted CID ${cid}`)
 
         pinData.dataPinned = false
         pinData.validClaim = false
