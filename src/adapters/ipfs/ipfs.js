@@ -21,12 +21,12 @@ import { yamux } from '@chainsafe/libp2p-yamux'
 // import { identifyService } from 'libp2p/identify'
 import { identify } from '@libp2p/identify'
 // import { circuitRelayServer, circuitRelayTransport } from 'libp2p/circuit-relay'
-import { circuitRelayServer, circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+import { circuitRelayServer } from '@libp2p/circuit-relay-v2'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { webSockets } from '@libp2p/websockets'
 import { publicIpv4 } from 'public-ip'
 import { multiaddr } from '@multiformats/multiaddr'
-import { webRTC } from '@libp2p/webrtc'
+// import { webRTC } from '@libp2p/webrtc'
 import { unixfs } from '@helia/unixfs'
 import { keychain } from '@libp2p/keychain'
 import { defaultLogger } from '@libp2p/logger'
@@ -177,17 +177,17 @@ class IpfsAdapter {
 
       const transports = [
         tcp(),
-        webSockets(),
-        circuitRelayTransport({
-          discoverRelays: 3,
-          reservationConcurrency: 3
-        }),
-        webRTC()
+        webSockets()
+        // circuitRelayTransport({
+        //   discoverRelays: 3,
+        //   reservationConcurrency: 3
+        // }),
+        // webRTC()
       ]
 
-      if (this.config.useWebRtc) {
-        transports.push(webRTC())
-      }
+      // if (this.config.useWebRtc) {
+      //   transports.push(webRTC())
+      // }
 
       // libp2p is the networking layer that underpins Helia
       const libp2p = await this.createLibp2p({
