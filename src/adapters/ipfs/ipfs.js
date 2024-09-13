@@ -175,25 +175,15 @@ class IpfsAdapter {
         console.log('Helia (IPFS) node IS NOT configured as Circuit Relay')
       }
 
-      // Configure transports
-      let transports
-      if (process.env.CONNECT_PREF === 'direct') {
-        transports = [
-          tcp(),
-          webSockets()
-          // webRTC()
-        ]
-      } else {
-        transports = [
-          tcp(),
-          webSockets(),
-          circuitRelayTransport({
-            discoverRelays: 3,
-            reservationConcurrency: 3
-          })
-          // webRTC()
-        ]
-      }
+      const transports = [
+        tcp(),
+        webSockets(),
+        circuitRelayTransport({
+          discoverRelays: 3,
+          reservationConcurrency: 3
+        }),
+        webRTC()
+      ]
 
       if (this.config.useWebRtc) {
         transports.push(webRTC())
