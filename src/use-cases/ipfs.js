@@ -415,13 +415,29 @@ class IpfsUseCases {
         // If the file does meet the size requirements, then unpin it.
         console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes. Unpinning file.`)
 
-        // Delete the file from the blockstore
-        await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
-        console.log(`Deleted CID ${cid}`)
+        // 9/13/24 CT: Trying to delete the file causes the IPFS node to freeze.
+        // For now I'll try deleting the DB model to prevent the timer controller
+        // from continually trying to download and validate the file.
 
-        pinData.dataPinned = false
-        pinData.validClaim = false
-        await pinData.save()
+        // Delete the file from the blockstore
+        // await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+        // console.log(`Deleted CID ${cid}`)
+
+        try {
+          // Remove pin from database, so that it does not keep getting downloaded
+          // and pinning retried.
+          const Pins = this.adapters.localdb.Pins
+          const existingModel = await Pins.findOne({ cid })
+          console.log('existingModel: ', existingModel)
+          await existingModel.remove()
+          console.log(`Database model for ${cid} deleted.`)
+        } catch (err) {
+          console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
+        }
+
+        // pinData.dataPinned = false
+        // pinData.validClaim = false
+        // await pinData.save()
 
         return false
       }
