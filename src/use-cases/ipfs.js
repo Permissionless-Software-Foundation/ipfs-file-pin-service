@@ -648,6 +648,7 @@ class IpfsUseCases {
       const isDir = contentArray[0].path.match('/') // TODO : looking for a better way to detect if is a directory
       // 'listDir' is a flag to ignore this code on /download endpoint.
       if (isDir && !name && listDir) {
+        console.log('This CID is a directory')
         const stream = new Stream.Readable({ read () { } })
         for (let i = 0; i < contentArray.length; i++) {
           const cont = contentArray[i]
@@ -661,12 +662,15 @@ class IpfsUseCases {
         stream.push(null)
         // return fileName as html because the controller the library <mime.lookup> sends it as html
         return { filename: contentArray[0].name + '.html', readStream: stream }
+      } else {
+        console.log('This CID is not a directory.')
       }
 
       let fullCid = cid
       // if endpoint path does not have a provided name, looking into content array for
       // file names.
       if (!name) {
+        console.log('Looking for filename.')
         for (let i = 0; i < contentArray.length; i++) {
           const cont = contentArray[i]
           // if a content name is different than the provided cid, possibly means the provided cid is a directory
@@ -677,18 +681,22 @@ class IpfsUseCases {
           }
         }
       } else {
+        console.log(`filename is ${name}`)
         // if the endpoint path its  /cid/:filename
         fullCid = `${cid}/${name}`
       }
 
+      console.log('creating buffer')
       // Convert the file to a Buffer.
       const fileChunks = []
       for await (const chunk of helia.fs.cat(fullCid)) {
         fileChunks.push(chunk)
       }
       const fileBuf = Buffer.concat(fileChunks)
+      console.log('buffer created')
 
       // Convert the Buffer into a readable stream
+      console.log('converting buffer to stream')
       const bufferToStream = (myBuffer) => {
         const tmp = new Duplex()
         tmp.push(myBuffer)
@@ -698,6 +706,7 @@ class IpfsUseCases {
       const readStream = bufferToStream(fileBuf)
 
       const filename = existingModel.filename
+      console.log('returning stream. downloadCid() done.')
 
       return { filename, readStream }
     } catch (err) {
