@@ -28,9 +28,11 @@ class TimerControllers {
 
     // Bind 'this' object to all subfunctions.
     this.pinCids = this.pinCids.bind(this)
+    this.autoReboot = this.autoReboot.bind(this)
 
     // Encapsulate constants
     this.PIN_CID_INTERVAL = 60000 * 30 // 5 minutes
+    this.REBOOT_INTERVAL = 60000 * 60 * 3 // 3 hours
   }
 
   // Start all the time-based controllers.
@@ -38,6 +40,8 @@ class TimerControllers {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
     this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+
+    this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
     return true
   }
@@ -90,6 +94,15 @@ class TimerControllers {
       // Do not throw an error. This is a top-level function.
       return false
     }
+  }
+
+  // This timer is used to auto-reboot the processes. If this is being run in Docker container
+  // (the target for production), the Docker container should automatically restart the timer.
+  // This is a temporary fix to the IPFS node stalling occasionally until a better fix can be
+  // found.
+  autoReboot () {
+    console.log('Rebooting service.')
+    process.exit(1)
   }
 }
 
