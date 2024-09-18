@@ -74,7 +74,9 @@ class IpfsUseCases {
       console.log('processPinClaim() this.wallet.bchjs.restURL: ', this.wallet.bchjs.restURL)
       console.log('processPinClaim() this.wallet.ar.interface: ', this.wallet.ar.interface)
 
-      console.log('processPinClaim() inObj: ', inObj)
+      const now = new Date()
+
+      console.log(`processPinClaim() inObj at ${now.toLocaleString()}: `, inObj)
       const { proofOfBurnTxid, cid, claimTxid, filename, address } = inObj
 
       // Wait a few seconds to ensure the TXs have syndicated and been processed
@@ -251,10 +253,14 @@ class IpfsUseCases {
         await pinData.save()
       } else {
         // If the file does meet the size requirements, then unpin it.
-        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper Pob. Unpinning file.`)
+        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper PoB. Unpinning file.`)
 
+        // 9-24 CT: Commenting this out as I think it is causing the IPFS node
+        // to hang and stop answering calls to download data.
+        // Maybe try removing the 'await' call?
+        //
         // Delete the file from the blockstore
-        await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+        // await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
 
         try {
           // Remove pin from database, so that it does not keep getting downloaded
