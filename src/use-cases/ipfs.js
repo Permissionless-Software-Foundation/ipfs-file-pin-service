@@ -618,7 +618,7 @@ class IpfsUseCases {
 
       const Pins = this.adapters.localdb.Pins
       const existingModel = await Pins.find({ cid })
-      // console.log('existingModel: ', existingModel)
+      console.log(`existingModel for CID ${cid}: `, existingModel)
 
       return existingModel[0]
     } catch (err) {
