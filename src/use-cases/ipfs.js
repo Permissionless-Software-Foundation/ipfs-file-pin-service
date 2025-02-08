@@ -52,6 +52,7 @@ class IpfsUseCases {
     this.processPinClaim = this.processPinClaim.bind(this)
     this.pinCid = this.pinCid.bind(this)
     this._getCid = this._getCid.bind(this)
+    this._getCidWithTimeout = this._getCidWithTimeout.bind(this)
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
@@ -195,6 +196,8 @@ class IpfsUseCases {
       // let fileSize = null
 
       // If the pin is already being tracked, then skip.
+      // This code block needs to be above the download code, so that multiple
+      // downloads do not stack up.
       let tracker
       if (this.pinIsBeingTracked(cid)) {
         console.log('This pin is already being tracked. Skipping.')
@@ -207,7 +210,7 @@ class IpfsUseCases {
       console.log(`Validating pin claim for ${filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
       // Download the file and return the size of the file.
-      const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
 
       if (!fileSize && fileSize !== 0) {
         console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
@@ -366,7 +369,7 @@ class IpfsUseCases {
         return true
       }
 
-      const fileSize = await this.retryQueue.addToQueue(this._getCid, { cid: cidClass })
+      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
       // const fileSize = await this._getCid({ cid: cidClass })
 
       // If filesize is undefined, then the download was not successful.
@@ -528,6 +531,32 @@ class IpfsUseCases {
       console.error('Error in _getCid(): ', err)
       throw err
     }
+  }
+
+  // This function is a wrapper for _getCid(). If _getCid() does not resolve
+  // within 5 minutes, then this function will reject the Promise with an error.
+  // This prevents _getCid from blocking downloads of other CIDs for too long.
+  async _getCidWithTimeout (inObj = {}) {
+    return new Promise((resolve, reject) => {
+      // The Promise will reject after a period of time.
+      const timeout = 60000 * 5 // 5 minutes
+      const timer = setTimeout(() => {
+        reject(new Error(`Operation timed out after ${timeout} ms`))
+      }, timeout)
+
+      this._getCid(inObj)
+        .then((result) => {
+          // If the download is successful, then clear the timer and resolve with
+          // the downloaded data.
+          clearTimeout(timer)
+          resolve(result)
+        })
+        .catch((err) => {
+          // If there is an error, clear the timer and reject with that error.
+          clearTimeout(timer)
+          reject(err)
+        })
+    })
   }
 
   // Get the differential token qty between the inputs and outputs of a tx.
