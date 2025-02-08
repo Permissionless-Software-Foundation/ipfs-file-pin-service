@@ -42,7 +42,7 @@ class IpfsUseCases {
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
       concurrency: 20,
-      attempts: 0,
+      attempts: 1,
       timeout: 60000 * 5 // Note: Timeout feature does not work is v1.0.10
     })
     this.pinEntity = new PinEntity()
