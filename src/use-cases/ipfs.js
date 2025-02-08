@@ -538,14 +538,18 @@ class IpfsUseCases {
   // This prevents _getCid from blocking downloads of other CIDs for too long.
   async _getCidWithTimeout (inObj = {}) {
     return new Promise((resolve, reject) => {
+      const { cid } = inObj
+
       // The Promise will reject after a period of time.
       const timeout = 60000 * 5 // 5 minutes
       const timer = setTimeout(() => {
+        console.log(`CID ${cid} did not finish downloading after ${timeout / 60000} minutes`)
         reject(new Error(`Operation timed out after ${timeout} ms`))
       }, timeout)
 
       this._getCid(inObj)
         .then((result) => {
+          console.log(`Finished downloading CID ${cid}`)
           // If the download is successful, then clear the timer and resolve with
           // the downloaded data.
           clearTimeout(timer)
