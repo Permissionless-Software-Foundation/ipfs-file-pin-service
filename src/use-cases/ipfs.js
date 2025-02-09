@@ -356,13 +356,16 @@ class IpfsUseCases {
 
       const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
       // const fileSize = await this._getCid({ cid: cidClass })
+      console.log(`File size for ${cid}: `, fileSize)
 
       // If the model in the database says the file is already pinned and
       // validated, then ensure the file is actually pinned and exit.
       if (dataPinned) {
         // Pin the file
         try {
+          console.log(`Pinning ${cid}...`)
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
+          console.log(`...finished pinning ${cid}`)
         } catch (err) {
           // if (err.message.includes('Already pinned')) {
           //   console.log(`CID ${cid} already pinned.`)
