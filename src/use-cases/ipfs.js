@@ -354,6 +354,9 @@ class IpfsUseCases {
       // the same file twice.
       const tracker = this.trackPin(cid)
 
+      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
+      // const fileSize = await this._getCid({ cid: cidClass })
+
       // If the model in the database says the file is already pinned and
       // validated, then ensure the file is actually pinned and exit.
       if (dataPinned) {
@@ -369,9 +372,6 @@ class IpfsUseCases {
         }
         return true
       }
-
-      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
-      // const fileSize = await this._getCid({ cid: cidClass })
 
       // If filesize is undefined, then the download was not successful.
       //
