@@ -388,8 +388,6 @@ class IpfsUseCases {
         return true
       }
 
-
-
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
       // fileSize = file.length
