@@ -511,8 +511,20 @@ class IpfsUseCases {
 
     try {
       console.log(`Trying to download CID ${cid}...`)
-      await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
+      // This command seems to be hanging and not downloading the files.
+      // await this.adapters.ipfs.ipfs.blockstore.get(cid)
+
+      // Trying alternate way to download file
+      const fs = this.adapters.ipfs.ipfs.fs
+      const chunks = []
+      for await (const buf of fs.cat(cid)) {
+        // console.info(buf)
+        chunks.push(buf)
+      }
+      console.log(`CID ${cid} downloaded successfully. chunks.length: ${chunks.length}`)
+
+      // Get the file size and other stats on the file.
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
       // console.log('file stats: ', stats)
 
