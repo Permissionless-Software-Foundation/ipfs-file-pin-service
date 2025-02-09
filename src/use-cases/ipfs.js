@@ -367,11 +367,11 @@ class IpfsUseCases {
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
           console.log(`...finished pinning ${cid}`)
         } catch (err) {
-          // if (err.message.includes('Already pinned')) {
-          //   console.log(`CID ${cid} already pinned.`)
-          // } else {
-          //   throw err
-          // }
+          if (err.message.includes('Already pinned')) {
+            console.log(`CID ${cid} already pinned.`)
+          } else {
+            throw err
+          }
         }
         return true
       }
