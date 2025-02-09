@@ -31,8 +31,8 @@ class TimerControllers {
     this.autoReboot = this.autoReboot.bind(this)
 
     // Encapsulate constants
-    this.PIN_CID_INTERVAL = 60000 * 30 // 5 minutes
-    this.REBOOT_INTERVAL = 60000 * 60 * 3 // 3 hours
+    this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
+    this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
   }
 
   // Start all the time-based controllers.
