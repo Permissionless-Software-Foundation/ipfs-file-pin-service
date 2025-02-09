@@ -358,6 +358,18 @@ class IpfsUseCases {
       // const fileSize = await this._getCid({ cid: cidClass })
       console.log(`File size for ${cid}: `, fileSize)
 
+      // If filesize is undefined, then the download was not successful.
+      //
+      if (!fileSize && fileSize !== 0) {
+        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
+        delete this.pinTracker[cid]
+        this.pinTrackerCnt--
+
+        return false
+      }
+
+      // Dev Note: This call to pin content must come AFTER the CID is downloaded,
+      // otherwise the Promise returned from pin.add() will never resolve.
       // If the model in the database says the file is already pinned and
       // validated, then ensure the file is actually pinned and exit.
       if (dataPinned) {
@@ -376,15 +388,7 @@ class IpfsUseCases {
         return true
       }
 
-      // If filesize is undefined, then the download was not successful.
-      //
-      if (!fileSize && fileSize !== 0) {
-        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
-        delete this.pinTracker[cid]
-        this.pinTrackerCnt--
 
-        return false
-      }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
       // console.log('pinCid() file: ', file)
