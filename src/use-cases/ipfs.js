@@ -354,24 +354,9 @@ class IpfsUseCases {
       // the same file twice.
       const tracker = this.trackPin(cid)
 
-      // If the model in the database says the file is already pinned and
-      // validated, then ensure the file is actually pinned and exit.
-      if (dataPinned) {
-        // Pin the file
-        try {
-          await this.adapters.ipfs.ipfs.pins.add(cidClass)
-        } catch (err) {
-          // if (err.message.includes('Already pinned')) {
-          //   console.log(`CID ${cid} already pinned.`)
-          // } else {
-          //   throw err
-          // }
-        }
-        return true
-      }
-
       const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
       // const fileSize = await this._getCid({ cid: cidClass })
+      console.log(`File size for ${cid}: `, fileSize)
 
       // If filesize is undefined, then the download was not successful.
       //
@@ -381,6 +366,26 @@ class IpfsUseCases {
         this.pinTrackerCnt--
 
         return false
+      }
+
+      // Dev Note: This call to pin content must come AFTER the CID is downloaded,
+      // otherwise the Promise returned from pin.add() will never resolve.
+      // If the model in the database says the file is already pinned and
+      // validated, then ensure the file is actually pinned and exit.
+      if (dataPinned) {
+        // Pin the file
+        try {
+          console.log(`Pinning ${cid}...`)
+          await this.adapters.ipfs.ipfs.pins.add(cidClass)
+          console.log(`...finished pinning ${cid}\n`)
+        } catch (err) {
+          if (err.message.includes('Already pinned')) {
+            console.log(`CID ${cid} already pinned.`)
+          } else {
+            throw err
+          }
+        }
+        return true
       }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
@@ -416,7 +421,7 @@ class IpfsUseCases {
         }
 
         this.pinSuccess++
-        console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.`)
+        console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.\n`)
 
         pinData.dataPinned = true
         pinData.validClaim = true
@@ -511,8 +516,21 @@ class IpfsUseCases {
 
     try {
       console.log(`Trying to download CID ${cid}...`)
+
+      // This command seems to be hanging and not downloading the files.
       await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
+      // This way throws a 'not a file' error when processing Token Tiger JSON files.
+      // Trying alternate way to download file
+      // const fs = this.adapters.ipfs.ipfs.fs
+      // const chunks = []
+      // for await (const buf of fs.cat(cid)) {
+      //   // console.info(buf)
+      //   chunks.push(buf)
+      // }
+      // console.log(`CID ${cid} downloaded successfully. chunks.length: ${chunks.length}`)
+
+      // Get the file size and other stats on the file.
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
       // console.log('file stats: ', stats)
 
