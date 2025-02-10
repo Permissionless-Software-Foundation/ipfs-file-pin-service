@@ -377,7 +377,7 @@ class IpfsUseCases {
         try {
           console.log(`Pinning ${cid}...`)
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
-          console.log(`...finished pinning ${cid}`)
+          console.log(`...finished pinning ${cid}\n`)
         } catch (err) {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
@@ -421,7 +421,7 @@ class IpfsUseCases {
         }
 
         this.pinSuccess++
-        console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.`)
+        console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.\n`)
 
         pinData.dataPinned = true
         pinData.validClaim = true
