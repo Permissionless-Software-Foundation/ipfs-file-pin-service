@@ -1,5 +1,13 @@
 /*
   Use cases library for working with the IPFS node.
+
+  Dev Note about 'Pin Tracker':
+  - The pin tracker tracks Pin Claims that have been validated.
+  - All Pin Claims in the database are added to the tracker in the first
+    iteration of the Timer Controller.
+  - If they are valid in the database or get validated by the Timer Controller,
+    they are removed from the tracker.
+  - If they fail to download, they are added to the tracker.
 */
 
 // Global npm libraries
@@ -52,19 +60,22 @@ class IpfsUseCases {
     // Bind 'this' object to all subfunctions
     this.processPinClaim = this.processPinClaim.bind(this)
     this.pinCid = this.pinCid.bind(this)
+    this.pinCidForTimerController = this.pinCidForTimerController.bind(this)
+    this._tryToGetCid = this._tryToGetCid.bind(this)
+    this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
     this._getCid = this._getCid.bind(this)
     this._getCidWithTimeout = this._getCidWithTimeout.bind(this)
     this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
+    this.trackPin = this.trackPin.bind(this)
+    this.pinIsBeingTracked = this.pinIsBeingTracked.bind(this)
+    this.removePinFromTracker = this.removePinFromTracker.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
-    this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
     this.getPinClaims = this.getPinClaims.bind(this)
-    this.pinCidForTimerController = this.pinCidForTimerController.bind(this)
-    this._tryToGetCid = this._tryToGetCid.bind(this)
 
     // State
     this.pinTracker = {} // track promises for pinning content
-    this.pinTrackerCnt = 0
+    this.pinTrackerCnt = 0 // See Dev Note at top of file.
     this.pinSuccess = 0
     // this.promiseQueueSize = 0
   }
@@ -197,8 +208,8 @@ class IpfsUseCases {
       // let fileSize = null
 
       // If the pin is already being tracked, then skip.
-      // This code block needs to be above the download code, so that multiple
-      // downloads do not stack up.
+      // Dev Note: This code block needs to be above the download code, so that
+      // multiple downloads do not stack up.
       let tracker
       if (this.pinIsBeingTracked(cid)) {
         console.log('This pin is already being tracked. Skipping.')
@@ -213,6 +224,8 @@ class IpfsUseCases {
       // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
 
+      // If fileSize = undefined then it's a directory.
+      // If fileSize = 0 then download was unsuccessful.
       if (!fileSize && fileSize !== 0) {
         console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         delete this.pinTracker[cid]
@@ -358,18 +371,19 @@ class IpfsUseCases {
       // const fileSize = await this._getCid({ cid: cidClass })
       console.log(`File size for ${cid}: `, fileSize)
 
-      // If filesize is undefined, then the download was not successful.
-      //
-      if (!fileSize && fileSize !== 0) {
+      // If fileSize = undefined then it's a directory.
+      // If fileSize = 0 then download was unsuccessful.
+      if (fileSize === 0) {
         // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
-        delete this.pinTracker[cid]
-        this.pinTrackerCnt--
+        // this.removePinFromTracker(cid)
+        // Dev Note: File could not be downloaded, so do not remove from tracker.
 
         return false
       }
 
       // Dev Note: This call to pin content must come AFTER the CID is downloaded,
       // otherwise the Promise returned from pin.add() will never resolve.
+      //
       // If the model in the database says the file is already pinned and
       // validated, then ensure the file is actually pinned and exit.
       if (dataPinned) {
@@ -385,6 +399,9 @@ class IpfsUseCases {
             throw err
           }
         }
+
+        // Remove the CID from the pin tracker.
+        this.removePinFromTracker(cid)
         return true
       }
 
@@ -404,7 +421,6 @@ class IpfsUseCases {
       // }
       const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
 
-      this.pinTrackerCnt--
       tracker.isValid = isValid
       tracker.completed = true
 
@@ -419,6 +435,8 @@ class IpfsUseCases {
             throw err
           }
         }
+
+        this.removePinFromTracker(cid)
 
         this.pinSuccess++
         console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.\n`)
@@ -449,6 +467,9 @@ class IpfsUseCases {
         } catch (err) {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
         }
+
+        // Dev Note: Do not remove the CID from the pin tracker here, as we do not
+        // want to try and re-download this big file.
 
         // pinData.dataPinned = false
         // pinData.validClaim = false
@@ -658,6 +679,14 @@ class IpfsUseCases {
     if (thisPromise) return true
 
     return false
+  }
+
+  // Remove a pin from the tracker.
+  removePinFromTracker (cid) {
+    delete this.pinTracker[cid]
+    this.pinTrackerCnt--
+
+    return true
   }
 
   // This is called by the /ipfs/pin-status/:cid REST API endpoint.
