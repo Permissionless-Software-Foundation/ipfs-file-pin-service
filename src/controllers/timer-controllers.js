@@ -99,7 +99,10 @@ class TimerControllers {
       for (let i = pins.length - 1; i >= 0; i--) {
         const thisPin = pins[i]
 
-        await this.useCases.ipfs.pinCidForTimerController(thisPin)
+        // After 10 tries, stop trying to pin the file. It needs manual intervention.
+        if (thisPin.downloadTries < 10) {
+          await this.useCases.ipfs.pinCidForTimerController(thisPin)
+        }
       }
 
       promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size

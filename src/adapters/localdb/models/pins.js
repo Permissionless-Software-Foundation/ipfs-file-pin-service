@@ -19,7 +19,8 @@ const Pin = new mongoose.Schema({
   validClaim: { type: Boolean, default: null },
   dataPinned: { type: Boolean, default: false },
   address: { type: String, default: null },
-  recordTime: { type: Number }
+  recordTime: { type: Number },
+  downloadTries: { type: Number, default: 0 }
 })
 
 export default mongoose.model('pin', Pin)

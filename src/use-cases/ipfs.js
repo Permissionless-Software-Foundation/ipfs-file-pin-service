@@ -88,6 +88,7 @@ class IpfsUseCases {
     // this.promiseQueueSize = 0
   }
 
+  // Get the cost to write 1MB per year of data to the PSFFPP network.
   async getWritePrice () {
     if (!this.writePrice) {
       this.writePrice = await this.adapters.writePrice.getMcWritePrice()
@@ -390,12 +391,17 @@ class IpfsUseCases {
       // const fileSize = await this._getCid({ cid: cidClass })
       console.log(`File size for ${cid}: `, fileSize)
 
-      // If fileSize = 0 then it's a directory.
       // If fileSize = undefined then download was unsuccessful.
       if (!fileSize) {
         // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         // this.removePinFromTracker(cid)
         // Dev Note: File could not be downloaded, so do not remove from tracker.
+
+        // If the download failed, increment the database model's downloadTries.
+        let tries = pinData.downloadTries
+        tries++
+        pinData.downloadTries = tries
+        await pinData.save()
 
         return false
       }
