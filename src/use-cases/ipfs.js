@@ -563,13 +563,6 @@ class IpfsUseCases {
     try {
       console.log(`Trying to download CID ${cid}...`)
 
-      // list cid content
-      const contentArray = []
-      for await (const file of this.adapters.ipfs.ipfs.fs.ls(cid)) {
-        contentArray.push(file)
-      }
-      console.log(`contentArray for CID ${cid}: `, contentArray)
-
       // This command seems to be hanging and not downloading the files.
       await this.adapters.ipfs.ipfs.blockstore.get(cid)
 
