@@ -29,6 +29,9 @@ class TimerControllers {
     // Bind 'this' object to all subfunctions.
     this.pinCids = this.pinCids.bind(this)
     this.autoReboot = this.autoReboot.bind(this)
+    this.reportQueueSize = this.reportQueueSize.bind(this)
+    this.startTimers = this.startTimers.bind(this)
+    this.stopTimers = this.stopTimers.bind(this)
 
     // Encapsulate constants
     this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
@@ -59,8 +62,14 @@ class TimerControllers {
   }
 
   reportQueueSize () {
-    const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
-    console.log(`There are ${queueSize} promises in the download queue.`)
+    try {
+      const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+      console.log(`There are ${queueSize} promises in the download queue.`)
+    } catch (err) {
+      console.error('Error in timer-controllers.js/reportQueueSize(): ', err)
+      // Do not throw an error. This is a top-level function.
+      return false
+    }
   }
 
   // Periodically check the database of pins and create a download/pin request
