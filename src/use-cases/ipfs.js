@@ -560,7 +560,9 @@ class IpfsUseCases {
       // Handle the case where the CID is a directory.
       // fileSize === undefined means it's a directory.
       // fileSize === 0 means the download failed.
-      if (!fileSize && fileSize !== 0) {
+      if (!fileSize) {
+        console.log(`cid ${cid} has a file size of: `, fileSize)
+
         // list cid content
         const contentArray = []
         for await (const file of this.adapters.ipfs.ipfs.fs.ls(cid)) {
