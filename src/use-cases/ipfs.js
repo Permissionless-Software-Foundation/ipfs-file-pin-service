@@ -371,9 +371,9 @@ class IpfsUseCases {
       // const fileSize = await this._getCid({ cid: cidClass })
       console.log(`File size for ${cid}: `, fileSize)
 
-      // If fileSize = undefined then it's a directory.
-      // If fileSize = 0 then download was unsuccessful.
-      if (fileSize === 0) {
+      // If fileSize = 0 then it's a directory.
+      // If fileSize = undefined then download was unsuccessful.
+      if (!fileSize) {
         // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
         // this.removePinFromTracker(cid)
         // Dev Note: File could not be downloaded, so do not remove from tracker.
