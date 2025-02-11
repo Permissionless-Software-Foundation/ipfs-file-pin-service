@@ -239,12 +239,11 @@ class IpfsUseCases {
       // Download the file and return the size of the file.
       const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
 
-      // If fileSize = undefined then it's a directory.
-      // If fileSize = 0 then download was unsuccessful.
+      // If fileSize = undefined then download was unsuccessful.
       if (!fileSize && fileSize !== 0) {
         console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
-        delete this.pinTracker[cid]
-        this.pinTrackerCnt--
+        // delete this.pinTracker[cid]
+        // this.pinTrackerCnt--
 
         return false
       }

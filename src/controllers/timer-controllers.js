@@ -95,7 +95,8 @@ class TimerControllers {
       const numTrackedPins = this.useCases.ipfs.pinTrackerCnt
       console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)
 
-      for (let i = 0; i < pins.length; i++) {
+      // Reverse the order of processing the pins. Start with the most-recent first.
+      for (let i = pins.length - 1; i >= 0; i--) {
         const thisPin = pins[i]
 
         await this.useCases.ipfs.pinCidForTimerController(thisPin)
