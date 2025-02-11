@@ -555,7 +555,7 @@ class IpfsUseCases {
       const stats = await this.adapters.ipfs.ipfs.fs.stat(cid)
       // console.log('file stats: ', stats)
 
-      const fileSize = Number(stats.fileSize)
+      let fileSize = Number(stats.fileSize)
 
       // Handle the case where the CID is a directory.
       // fileSize === undefined means it's a directory.
@@ -571,11 +571,13 @@ class IpfsUseCases {
         console.log('_getCid() Handling directory corner case.contentArray: ', contentArray)
 
         // Get the size of each file in the directory.
-        // let totalSize = 0
-        // for (const file of contentArray) {
-        //   const stats = await this.adapters.ipfs.ipfs.fs.stat(file.cid)
-        //   totalSize += Number(stats.fileSize)
-        // }
+        let totalSize = 0
+        for (const file of contentArray) {
+          const thisFileSize = file.size
+          totalSize += Number(thisFileSize)
+        }
+        console.log(`Total size of directory ${cid} is: ${totalSize}`)
+        fileSize = totalSize
       }
 
       return fileSize
