@@ -108,7 +108,7 @@ class TimerControllers {
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
 
       // Restart the timer interval after it completes.
-      this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+      // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
       return true
     } catch (err) {
