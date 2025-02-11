@@ -46,7 +46,7 @@ class TimerControllers {
     // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
     // Periodically report the number of files in the download queue
-    setInterval(this.reportQueueSize, 60000 * 10)
+    setInterval(this.reportQueueSize, 60000 * 2)
 
     this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
