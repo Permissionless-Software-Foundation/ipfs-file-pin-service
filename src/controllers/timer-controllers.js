@@ -31,8 +31,8 @@ class TimerControllers {
     this.autoReboot = this.autoReboot.bind(this)
 
     // Encapsulate constants
-    // this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
-    this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
+    this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
+    // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
   }
 
@@ -45,7 +45,7 @@ class TimerControllers {
     this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
     // Start the pinCids() function right away.
-    setTimeout(this.pinCids, 60000 * 2)
+    setTimeout(this.pinCids, 60000 * 4)
 
     return true
   }

@@ -389,9 +389,9 @@ class IpfsUseCases {
       if (dataPinned) {
         // Pin the file
         try {
-          console.log(`Pinning ${cid}...`)
+          // console.log(`Pinning ${cid}...`)
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
-          console.log(`...finished pinning ${cid}\n`)
+          // console.log(`...finished pinning ${cid}\n`)
         } catch (err) {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
@@ -561,14 +561,14 @@ class IpfsUseCases {
       // fileSize === undefined means it's a directory.
       // fileSize === 0 means the download failed.
       if (!fileSize) {
-        console.log(`cid ${cid} has a file size of: `, fileSize)
+        // console.log(`cid ${cid} has a file size of: `, fileSize)
 
         // list cid content
         const contentArray = []
         for await (const file of this.adapters.ipfs.ipfs.fs.ls(cid)) {
           contentArray.push(file)
         }
-        console.log('_getCid() Handling directory corner case.contentArray: ', contentArray)
+        // console.log('_getCid() Handling directory corner case.contentArray: ', contentArray)
 
         // Get the size of each file in the directory.
         let totalSize = 0
