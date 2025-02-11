@@ -40,11 +40,15 @@ class TimerControllers {
   startTimers () {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
-    this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+    // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+
+    // Periodically report the number of files in the download queue
+    setInterval(this.reportQueueSize, 60000 * 10)
 
     this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
-    // Start the pinCids() function right away.
+    // Start the pinCids() function after a few minutes after startup, once
+    // the Helia node has had time to connect to the IPFS network.
     setTimeout(this.pinCids, 60000 * 4)
 
     return true
@@ -52,6 +56,11 @@ class TimerControllers {
 
   stopTimers () {
     clearInterval(this.pinCidsHandle)
+  }
+
+  reportQueueSize () {
+    const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+    console.log(`There are ${queueSize} promises in the download queue.`)
   }
 
   // Periodically check the database of pins and create a download/pin request
