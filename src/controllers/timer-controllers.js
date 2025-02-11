@@ -44,6 +44,9 @@ class TimerControllers {
 
     this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
+    // Start the pinCids() function right away.
+    setTimeout(this.pinCids, 60000 * 2)
+
     return true
   }
 
