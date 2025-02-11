@@ -84,7 +84,15 @@ class IpfsUseCases {
     this.pinTracker = {} // track promises for pinning content
     this.pinTrackerCnt = 0 // See Dev Note at top of file.
     this.pinSuccess = 0
+    this.writePrice = null
     // this.promiseQueueSize = 0
+  }
+
+  async getWritePrice () {
+    if (!this.writePrice) {
+      this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+    }
+    return this.writePrice
   }
 
   // Process a new pin claim by adding it to the database.
@@ -367,8 +375,10 @@ class IpfsUseCases {
   async _tryToGetCid (inObj = {}) {
     try {
       const { pinData } = inObj
-      const { cid, tokensBurned, filename, dataPinned } = pinData
+      const { cid, tokensBurned, filename, dataPinned, validClaim } = pinData
       const cidClass = this.CID.parse(cid)
+
+      console.log(`CID ${cid} validClaim: ${validClaim}, dataPinned: ${dataPinned}`)
 
       // Exit if the file is already pinned.
       if (dataPinned) return true
@@ -509,7 +519,13 @@ class IpfsUseCases {
       }
 
       // Get the cost in PSF tokens to store 1MB
-      const writePrice = await this.adapters.writePrice.getMcWritePrice()
+      let writePrice
+      if (!this.writePrice) {
+        this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+        writePrice = this.writePrice
+      } else {
+        writePrice = this.writePrice
+      }
       console.log('writePrice: ', writePrice)
 
       // Calculate costs in PSF tokens for this pin request.
