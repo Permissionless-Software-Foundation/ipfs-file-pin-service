@@ -32,6 +32,7 @@ class TimerControllers {
     this.reportQueueSize = this.reportQueueSize.bind(this)
     this.startTimers = this.startTimers.bind(this)
     this.stopTimers = this.stopTimers.bind(this)
+    this.cleanUsage = this.cleanUsage.bind(this)
 
     // Encapsulate constants
     this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
@@ -54,11 +55,14 @@ class TimerControllers {
     // the Helia node has had time to connect to the IPFS network.
     setTimeout(this.pinCids, 60000 * 4)
 
+    this.cleanUsageHandle = setInterval(this.cleanUsage, 60000 * 60) // 1 hour
+
     return true
   }
 
   stopTimers () {
     clearInterval(this.pinCidsHandle)
+    clearInterval(this.cleanusageHandle)
   }
 
   reportQueueSize () {
@@ -129,6 +133,20 @@ class TimerControllers {
   autoReboot () {
     console.log('Rebooting service.')
     process.exit(1)
+  }
+
+  // Clean the usage state so that stats reflect the last 24 hours.
+  cleanUsage () {
+    try {
+      this.useCases.usage.cleanUsage()
+
+      return true
+    } catch (err) {
+      console.error('Error in time-controller.js/cleanUsage(): ', err)
+
+      // Note: Do not throw an error. This is a top-level function.
+      return false
+    }
   }
 }
 

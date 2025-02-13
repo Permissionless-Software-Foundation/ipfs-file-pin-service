@@ -61,6 +61,24 @@ class IpfsUseCaseMock {
   }
 }
 
+class UsageUseCaseMock {
+  async cleanUsage() {
+    return {}
+  }
+
+  async getRestSummary() {
+    return true
+  }
+
+  async getTopIps(params) {
+    return true
+  }
+
+  async getTopEndpoints(existingUser, newData) {
+    return true
+  }
+}
+
 class UseCasesMock {
   constuctor(localConfig = {}) {
     // this.user = new UserUseCaseMock(localConfig)
@@ -68,6 +86,7 @@ class UseCasesMock {
 
   user = new UserUseCaseMock()
   ipfs = new IpfsUseCaseMock()
+  usage = new UsageUseCaseMock()
 }
 
 export default UseCasesMock;
