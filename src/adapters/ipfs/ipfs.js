@@ -20,15 +20,15 @@ import { yamux } from '@chainsafe/libp2p-yamux'
 // import { bootstrap } from '@libp2p/bootstrap'
 // import { identifyService } from 'libp2p/identify'
 import { identify } from '@libp2p/identify'
-// import { circuitRelayServer, circuitRelayTransport } from '@libp2p/circuit-relay-v2'
-import { circuitRelayServer } from '@libp2p/circuit-relay-v2'
+import { circuitRelayServer, circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+// import { circuitRelayServer } from '@libp2p/circuit-relay-v2'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { webSockets } from '@libp2p/websockets'
 import { publicIpv4 } from 'public-ip'
 import { multiaddr } from '@multiformats/multiaddr'
-// import { webRTC } from '@libp2p/webrtc'
-import { unixfs } from '@helia/unixfs'
+import { webRTC } from '@libp2p/webrtc'
 import { keychain } from '@libp2p/keychain'
+import { unixfs } from '@helia/unixfs'
 import { generateKeyPairFromSeed } from '@libp2p/crypto/keys'
 import crypto from 'crypto'
 
@@ -149,12 +149,12 @@ class IpfsAdapter {
 
       const transports = [
         tcp(),
-        webSockets()
-        // circuitRelayTransport({
-        //   discoverRelays: 3,
-        //   reservationConcurrency: 3
-        // }),
-        // webRTC()
+        webSockets(),
+        circuitRelayTransport({
+          discoverRelays: 3,
+          reservationConcurrency: 3
+        }),
+        webRTC()
       ]
 
       // if (this.config.useWebRtc) {
@@ -170,8 +170,8 @@ class IpfsAdapter {
           listen: [
             '/ip4/127.0.0.1/tcp/0',
             `/ip4/0.0.0.0/tcp/${this.config.ipfsTcpPort}`,
-            `/ip4/0.0.0.0/tcp/${this.config.ipfsWsPort}/ws`
-            // '/webrtc'
+            `/ip4/0.0.0.0/tcp/${this.config.ipfsWsPort}/ws`,
+            '/webrtc'
           ]
         },
         transports,
