@@ -8,6 +8,7 @@ async function getPins () {
   mongoose.set('useCreateIndex', true) // Stop deprecation warning.
   await mongoose.connect(
     config.database,
+    // 'mongodb://172.17.0.1:5556/ipfs-service-prod',
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
 

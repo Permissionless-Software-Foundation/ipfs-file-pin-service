@@ -29,10 +29,14 @@ class TimerControllers {
     // Bind 'this' object to all subfunctions.
     this.pinCids = this.pinCids.bind(this)
     this.autoReboot = this.autoReboot.bind(this)
+    this.reportQueueSize = this.reportQueueSize.bind(this)
+    this.startTimers = this.startTimers.bind(this)
+    this.stopTimers = this.stopTimers.bind(this)
+    this.cleanUsage = this.cleanUsage.bind(this)
 
     // Encapsulate constants
-    // this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
-    this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
+    this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
+    // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
   }
 
@@ -40,15 +44,36 @@ class TimerControllers {
   startTimers () {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
-    this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+    // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+
+    // Periodically report the number of files in the download queue
+    setInterval(this.reportQueueSize, 60000 * 2)
 
     this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
+
+    // Start the pinCids() function after a few minutes after startup, once
+    // the Helia node has had time to connect to the IPFS network.
+    setTimeout(this.pinCids, 60000 * 4)
+
+    this.cleanUsageHandle = setInterval(this.cleanUsage, 60000 * 60) // 1 hour
 
     return true
   }
 
   stopTimers () {
     clearInterval(this.pinCidsHandle)
+    clearInterval(this.cleanusageHandle)
+  }
+
+  reportQueueSize () {
+    try {
+      const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
+      console.log(`There are ${queueSize} promises in the download queue.`)
+    } catch (err) {
+      console.error('Error in timer-controllers.js/reportQueueSize(): ', err)
+      // Do not throw an error. This is a top-level function.
+      return false
+    }
   }
 
   // Periodically check the database of pins and create a download/pin request
@@ -74,10 +99,14 @@ class TimerControllers {
       const numTrackedPins = this.useCases.ipfs.pinTrackerCnt
       console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)
 
-      for (let i = 0; i < pins.length; i++) {
+      // Reverse the order of processing the pins. Start with the most-recent first.
+      for (let i = pins.length - 1; i >= 0; i--) {
         const thisPin = pins[i]
 
-        await this.useCases.ipfs.pinCidForTimerController(thisPin)
+        // After 10 tries, stop trying to pin the file. It needs manual intervention.
+        if (thisPin.downloadTries < 10) {
+          await this.useCases.ipfs.pinCidForTimerController(thisPin)
+        }
       }
 
       promiseQueueSize = this.useCases.ipfs.retryQueue.validationQueue.size
@@ -87,7 +116,7 @@ class TimerControllers {
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
 
       // Restart the timer interval after it completes.
-      this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+      // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
       return true
     } catch (err) {
@@ -104,6 +133,20 @@ class TimerControllers {
   autoReboot () {
     console.log('Rebooting service.')
     process.exit(1)
+  }
+
+  // Clean the usage state so that stats reflect the last 24 hours.
+  cleanUsage () {
+    try {
+      this.useCases.usage.cleanUsage()
+
+      return true
+    } catch (err) {
+      console.error('Error in time-controller.js/cleanUsage(): ', err)
+
+      // Note: Do not throw an error. This is a top-level function.
+      return false
+    }
   }
 }
 

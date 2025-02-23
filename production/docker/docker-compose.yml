@@ -26,9 +26,12 @@ services:
     links:
       - mongo-file-service
     ports:
-      - '5031:5031' # <host port>:<container port>
-      - '4001:4001'
-      - '4003:4003'
+      # <host port>:<container port>
+      - '5031:5031' # REST API
+      - '4001:4001' # TCP
+      - '4003:4003' # Websockets
+      - '4005:4005' # WebRTC
+
     volumes:
       - ../data/ipfsdata:/home/safeuser/ipfs-file-pin-service/.ipfsdata
       - ./start-production.sh:/home/safeuser/ipfs-file-pin-service/start-production.sh

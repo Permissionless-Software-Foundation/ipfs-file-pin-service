@@ -6,7 +6,7 @@
 */
 
 // Global npm libraries
-const axios = require('axios')
+import axios from 'axios'
 
 const CID = 'bafybeihpe6m4r5z5cqwi27wmjuj33wn3f3ipxbe4rcecksicr5k26aqbca'
 const SERVER = 'http://localhost:5031'

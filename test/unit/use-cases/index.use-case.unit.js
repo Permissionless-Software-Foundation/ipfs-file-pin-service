@@ -52,6 +52,8 @@ describe('#use-cases', () => {
 
   describe('#start', () => {
     it('should initialize async use cases', async () => {
+      sandbox.stub(uut.ipfs, 'getWritePrice').resolves(0.08)
+
       const result = await uut.start()
 
       assert.equal(result, true)
