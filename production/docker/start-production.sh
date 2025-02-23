@@ -32,7 +32,7 @@ export IPFS_HOST=172.17.0.1
 export IPFS_API_PORT=5001
 export IPFS_TCP_PORT=4001
 export IPFS_WS_PORT=4003
-
+export IPFS_WEB_RTC_PORT=4005
 # Set the debug level for helia-coord. 0-3.
 # 0 = no debug logs. 3 = maximum debug logs.
 export DEBUG_LEVEL=0
@@ -41,5 +41,9 @@ export DEBUG_LEVEL=0
 #export WALLET_INTERFACE=web2
 #export APISERVER=http://172.17.0.1:3000/v5/
 
+# Use this if the IPFS node has a publically accessible IP address.
+#export CONNECT_PREF=direct
+# Use this if the IPFS node is behind a NAT or Firewall and cannot be accessed directly.
+export CONNECT_PREF=cr
 
 npm start

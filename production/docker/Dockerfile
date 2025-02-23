@@ -56,7 +56,7 @@ RUN git clone https://github.com/Permissionless-Software-Foundation/ipfs-file-pi
 WORKDIR /home/safeuser/ipfs-file-pin-service
 
 # For development: switch to unstable branch
-RUN git checkout helia-v5
+RUN git checkout master
 
 # Install dependencies
 #RUN mkdir .ipfsdata
@@ -65,9 +65,6 @@ RUN npm install
 
 # Generate the API docs
 RUN npm run docs
-
-# Expose the port the API will be served on.
-#EXPOSE 5010
 
 # Start the application.
 #COPY start-production.sh start-production.sh
