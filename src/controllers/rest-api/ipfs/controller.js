@@ -110,7 +110,6 @@ class IpfsRESTControllerLib {
     }
   }
 
-
   /**
    * @api {post} /ipfs/pin-claim Submit a Pin Claim for evaluation
    * @apiName PinClaim
