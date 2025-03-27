@@ -9,7 +9,7 @@ import jsonrpc from 'jsonrpc-lite'
 // import config from '../../../../config/index.js'
 
 class FilePinRPC {
-  constructor (localConfig) {
+  constructor (localConfig = {}) {
     // Dependency Injection.
     this.adapters = localConfig.adapters
     if (!this.adapters) {
@@ -31,6 +31,7 @@ class FilePinRPC {
     this.filePinRouter = this.filePinRouter.bind(this)
     this.getFileMetadata = this.getFileMetadata.bind(this)
     this.getPins = this.getPins.bind(this)
+    this.pinClaim = this.pinClaim.bind(this)
   }
 
   // This is the top-level router for this library.
@@ -53,6 +54,8 @@ class FilePinRPC {
           return await this.getFileMetadata(rpcData)
         case 'getPins':
           return await this.getPins(rpcData)
+        case 'pinClaim':
+          return await this.pinClaim(rpcData)
       }
     } catch (err) {
       console.error('Error in FilePinRPC/rpcRouter(): ', err)
@@ -155,6 +158,41 @@ class FilePinRPC {
         status: 422,
         message: err.message,
         endpoint: 'getFileMetadata'
+      }
+    }
+  }
+
+  /**
+ * @api {JSON} /pinClaim Claim a file to be pinned
+ * @apiPermission public
+ * @apiName PinClaim
+ * @apiGroup JSON File Pin
+ *
+ * @apiExample Example usage:
+ * {"jsonrpc":"2.0","id":"123","method":"file-pin","params":{ "endpoint": "pinClaim" , "proofOfBurnTxid": "be4b63156c93f58ed311d403d9f756deda9abbc81d0fef8fbe5d769538b4261c", "cid": "bafybeied3zdwdiro7fqytyha2yfband4lwcrtozmf6shynylt3kexh26dq", "claimTxid": "c71e2f2cdf8658d90c61ac6183b8ffeeb359779807b317386044705d8352f0f2", "filename": "mutable-67ccefcca67097473e78ca10.json", "address": "bitcoincash:qqs2wrahl6azn9qdyrmp9ygeejqvzr8ruv7e9m30fr" }}
+ *
+ * @apiParam {string} endpoint      (required)
+ *
+ */
+  // Process pin claim
+  async pinClaim (rpcData) {
+    try {
+      const result = await this.useCases.ipfs.processPinClaim(rpcData.payload.params)
+
+      return {
+        endpoint: 'pinClaim',
+        success: true,
+        status: 200,
+        message: result.details
+      }
+    } catch (err) {
+      console.error('Error in pinClaim(): ', err)
+      // Return an error response
+      return {
+        success: false,
+        status: 422,
+        message: err.message,
+        endpoint: 'pinClaim'
       }
     }
   }

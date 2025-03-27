@@ -181,6 +181,31 @@ describe('#JSON RPC', () => {
       assert.equal(obj.result.method, 'about')
       assert.equal(obj.id, id)
     })
+    it('should route to file-pin handler', async () => {
+      const id = uid()
+      const userCall = jsonrpc.request(id, 'file-pin', { endpoint: 'getPins' })
+      const jsonStr = JSON.stringify(userCall, null, 2)
+
+      // Mock the controller.
+      sandbox.stub(uut.filePinController, 'filePinRouter').resolves('true')
+
+      // Force ipfs-coord communication.
+      uut.ipfsCoord.ipfs = {
+        orbitdb: {
+          sendToDb: () => {}
+        }
+      }
+
+      const result = await uut.router(jsonStr, 'peerA')
+      // console.log(result)
+
+      const obj = JSON.parse(result.retStr)
+      // console.log('obj: ', obj)
+
+      assert.equal(obj.result.value, 'true')
+      assert.equal(obj.result.method, 'file-pin')
+      assert.equal(obj.id, id)
+    })
 
     it('should exit quietly for duplicate RPC message', async () => {
       const id = uid()
