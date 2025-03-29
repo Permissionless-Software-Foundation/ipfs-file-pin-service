@@ -110,9 +110,40 @@ class IpfsRESTControllerLib {
     }
   }
 
-  // This endpoint is called by psf-slp-indexer when it detects a new Pin Claim
-  // on the blockchain. It passes the Claim information to this endpoint for
-  // validation and processing.
+  /**
+   * @api {post} /ipfs/pin-claim Submit a Pin Claim for evaluation
+   * @apiName PinClaim
+   * @apiGroup IPFS
+   * @apiDescription This endpoint is called by psf-slp-indexer when it detects a new Pin Claim
+   * on the blockchain. It passes the Claim information to this endpoint for
+   * validation and processing.
+   *
+   * @apiExample Example usage:
+   * curl -H "Content-Type: application/json" -X POST -d '{ "proofOfBurnTxid": "be4b63156c93f58ed311d403d9f756deda9abbc81d0fef8fbe5d769538b4261c", "cid": "bafybeied3zdwdiro7fqytyha2yfband4lwcrtozmf6shynylt3kexh26dq", "claimTxid": "c71e2f2cdf8658d90c61ac6183b8ffeeb359779807b317386044705d8352f0f2", "filename": "mutable-67ccefcca67097473e78ca10.json", "address": "bitcoincash:qqs2wrahl6azn9qdyrmp9ygeejqvzr8ruv7e9m30fr" }' http://localhost:5031/ipfs/pin-claim
+   *
+   * @apiParam {String} proofOfBurnTxid Proof of Burn Transaction ID.
+   * @apiParam {String} cid CID of the file to be pinned.
+   * @apiParam {String} claimTxid Claim Transaction ID.
+   * @apiParam {String} filename Filename of the file to be pinned.
+   * @apiParam {String} address Address of the user submitting the claim.
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *     HTTP/1.1 200 OK
+   *     {
+   *
+   *        success:true
+   *
+   *     }
+   *
+   * @apiError UnprocessableEntity Missing required parameters
+   *
+   * @apiErrorExample {json} Error-Response:
+   *     HTTP/1.1 422 Unprocessable Entity
+   *     {
+   *       "status": 422,
+   *       "error": "Unprocessable Entity"
+   *     }
+   */
   async pinClaim (ctx) {
     try {
       const body = ctx.request.body

@@ -110,8 +110,8 @@ class IpfsUseCases {
 
       // Wait a few seconds to ensure the TXs have syndicated and been processed
       // by the infrastructure.
-      console.log('Waiting 30 seconds to let TXs get processed...')
-      await this.wallet.bchjs.Util.sleep(30000)
+      console.log('Waiting 3 seconds to let TXs get processed...')
+      await this.wallet.bchjs.Util.sleep(3000)
 
       // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
