@@ -192,11 +192,11 @@ class WritePrice {
             txid: approvalTxid,
             isApprovalTx: true,
             verified: true,
-            writePrice: updateData.p2wdbWritePrice
+            writePrice: updateData.p2wdbWritePrice || updateData.writePrice
           })
           await newTx.save()
           // Return the write price from the update data.
-          writePrice = updateData.p2wdbWritePrice
+          writePrice = updateData.p2wdbWritePrice || updateData.writePrice
         } else {
           // Approval transaction failed validation.
           console.log(`Approval TXID was found to be invalid: ${approvalTxid}`)

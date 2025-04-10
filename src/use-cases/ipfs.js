@@ -22,6 +22,7 @@ import Wallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
 import Stream, { Duplex } from 'stream'
+import PSFFPP from 'psffpp'
 
 // Local libraries
 import PinEntity from '../entities/pin.js'
@@ -85,14 +86,25 @@ class IpfsUseCases {
     this.pinTrackerCnt = 0 // See Dev Note at top of file.
     this.pinSuccess = 0
     this.writePrice = null
+    this.psffpp = null // placeholder
     // this.promiseQueueSize = 0
   }
 
   // Get the cost to write 1MB per year of data to the PSFFPP network.
   async getWritePrice () {
-    if (!this.writePrice) {
-      this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+    // Old code
+    // if (!this.writePrice) {
+    //   this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+    // }
+    // return this.writePrice
+
+    if (!this.psffpp) {
+      this.psffpp = new PSFFPP({ wallet: this.wallet })
     }
+
+    const writePriceHistory = await this.psffpp.getMcWritePrice()
+    this.writePrice = writePriceHistory[0].writePrice
+
     return this.writePrice
   }
 
