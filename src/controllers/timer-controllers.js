@@ -67,6 +67,8 @@ class TimerControllers {
 
   reportQueueSize () {
     try {
+      console.log('reportQueueSize() Timer Controller fired.')
+
       const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
       console.log(`There are ${queueSize} promises in the download queue.`)
     } catch (err) {
@@ -137,6 +139,8 @@ class TimerControllers {
 
   // Clean the usage state so that stats reflect the last 24 hours.
   cleanUsage () {
+    console.log('cleanUsage() Timer Controller fired.')
+
     try {
       this.useCases.usage.cleanUsage()
 

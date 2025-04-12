@@ -102,8 +102,8 @@ class IpfsUseCases {
       this.psffpp = new PSFFPP({ wallet: this.wallet })
     }
 
-    const writePriceHistory = await this.psffpp.getMcWritePrice()
-    this.writePrice = writePriceHistory[0].writePrice
+    this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
+    // console.log('this.writePrice: ', this.writePrice)
 
     return this.writePrice
   }
@@ -271,7 +271,8 @@ class IpfsUseCases {
 
       // Validate that the Pin Claim has appropriate payment, and is under max
       // size requirement.
-      const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
+      // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned })
 
       this.pinTrackerCnt--
       tracker.isValid = isValid
@@ -456,7 +457,8 @@ class IpfsUseCases {
       // if (fileSize < this.config.maxPinSize) {
       //   isValid = true
       // }
-      const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
+      // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned })
 
       // tracker.isValid = isValid
       // tracker.completed = true
@@ -538,7 +540,8 @@ class IpfsUseCases {
       // Get the cost in PSF tokens to store 1MB
       let writePrice
       if (!this.writePrice) {
-        this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+        // this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+        this.writePrice = await this.getWritePrice()
         writePrice = this.writePrice
       } else {
         writePrice = this.writePrice
