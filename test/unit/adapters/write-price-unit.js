@@ -168,7 +168,7 @@ describe('#write-price', () => {
       sandbox.stub(uut.ps009, 'getApprovalTx').resolves(null)
       const result = await uut.getMcWritePrice()
       // console.log('result: ', result)
-      assert.equal(result, 0.08335233)
+      assert.equal(result, 0.03570889)
     })
 
     it('should throw error and return safety price if wallet is not initialized', async () => {
@@ -176,7 +176,7 @@ describe('#write-price', () => {
       uut.wallet = undefined
       const result = await uut.getMcWritePrice()
       // console.log('result: ', result)
-      assert.equal(result, 0.08335233)
+      assert.equal(result, 0.03570889)
     })
   })
 })

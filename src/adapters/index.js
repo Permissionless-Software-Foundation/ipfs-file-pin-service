@@ -67,7 +67,7 @@ class Adapters {
         console.log('Not starting IPFS node since this is an e2e test.')
       }
 
-      await this.writePrice.initialize({ wallet: this.wallet })
+      // await this.writePrice.initialize({ wallet: this.wallet })
 
       console.log('Async Adapters have been started.')
 
