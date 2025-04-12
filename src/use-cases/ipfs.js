@@ -131,6 +131,7 @@ class IpfsUseCases {
       // console.log('pobTxDetails: ', pobTxDetails)
 
       // Get TX details for the pin claim.
+      console.log('processPinClaim() claimTxid: ', claimTxid)
       let claimTxDetails = await this.wallet.getTxData([claimTxid])
       claimTxDetails = claimTxDetails[0]
       // console.log('claimTxDetails: ', claimTxDetails)
