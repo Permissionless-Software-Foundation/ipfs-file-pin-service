@@ -240,7 +240,7 @@ class IpfsUseCases {
       // console.log('pinData: ', pinData)
 
       const { cid, tokensBurned, filename, claimTxDetails } = pinData
-      console.log('pinCid() claimTxDetails: ', claimTxDetails)
+      // console.log('pinCid() claimTxDetails: ', claimTxDetails)
 
       // console.log(`Attempting to pinning CID: ${cid}`)
 
