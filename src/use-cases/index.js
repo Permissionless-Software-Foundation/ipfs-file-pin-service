@@ -26,7 +26,7 @@ class UseCases {
 
   // Run any startup Use Cases at the start of the app.
   async start () {
-    // await this.ipfs.getWritePrice()
+    await this.ipfs.getWritePrice({ claimTxDetails: { height: 893170 } })
 
     console.log('Async Use Cases have been started.')
 
