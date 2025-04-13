@@ -91,7 +91,10 @@ class IpfsUseCases {
   }
 
   // Get the cost to write 1MB per year of data to the PSFFPP network.
-  async getWritePrice () {
+  async getWritePrice (inObj = {}) {
+    const { claimTxDetails } = inObj
+    console.log('getWritePrice() claimTxDetails: ', claimTxDetails)
+
     // Old code
     // if (!this.writePrice) {
     //   this.writePrice = await this.adapters.writePrice.getMcWritePrice()
@@ -102,8 +105,22 @@ class IpfsUseCases {
       this.psffpp = new PSFFPP({ wallet: this.wallet })
     }
 
-    this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
+    // this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
     // console.log('this.writePrice: ', this.writePrice)
+
+    const writeHistory = await this.retryQueue.addToQueue(this.psffpp.getWritePriceHistory, {})
+    console.log('claimTxDetails() writeHistory: ', writeHistory)
+
+    const height = claimTxDetails.height
+
+    if (!height) {
+      // Return the current write price if this is an unconfirmed TX.
+      this.writePrice = writeHistory[0].writePrice
+    } else {
+      // Return the price for the block height of the claim.
+      const price = writeHistory.find(element => element.height <= height)
+      this.writePrice = price.writePrice
+    }
 
     return this.writePrice
   }
@@ -222,7 +239,8 @@ class IpfsUseCases {
     try {
       // console.log('pinData: ', pinData)
 
-      const { cid, tokensBurned, filename } = pinData
+      const { cid, tokensBurned, filename, claimTxDetails } = pinData
+      console.log('pinCid() claimTxDetails: ', claimTxDetails)
 
       // console.log(`Attempting to pinning CID: ${cid}`)
 
@@ -273,7 +291,7 @@ class IpfsUseCases {
       // Validate that the Pin Claim has appropriate payment, and is under max
       // size requirement.
       // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
-      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
 
       this.pinTrackerCnt--
       tracker.isValid = isValid
@@ -389,8 +407,9 @@ class IpfsUseCases {
   async _tryToGetCid (inObj = {}) {
     try {
       const { pinData } = inObj
-      const { cid, tokensBurned, filename, dataPinned, validClaim } = pinData
+      const { cid, tokensBurned, filename, dataPinned, validClaim, claimTxDetails } = pinData
       const cidClass = this.CID.parse(cid)
+      console.log('_tryToGetCid() claimTxDetails: ', claimTxDetails)
 
       // Exit if the file is already pinned.
       if (dataPinned) return true
@@ -459,7 +478,7 @@ class IpfsUseCases {
       //   isValid = true
       // }
       // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
-      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
 
       // tracker.isValid = isValid
       // tracker.completed = true
@@ -529,8 +548,9 @@ class IpfsUseCases {
   // Otherwise it returns false.
   async validateSizeAndPayment (inObj = {}) {
     try {
-      const { fileSize, tokensBurned } = inObj
+      const { fileSize, tokensBurned, claimTxDetails } = inObj
       console.log('tokensBurned: ', tokensBurned)
+      // console.log('validateSizeAndPayment() claimTxDetails: ', claimTxDetails)
 
       // Return false if the file is larger than the configured max size.
       const fileSizeIsValid = fileSize < this.config.maxPinSize
@@ -542,7 +562,7 @@ class IpfsUseCases {
       let writePrice
       if (!this.writePrice) {
         // this.writePrice = await this.adapters.writePrice.getMcWritePrice()
-        this.writePrice = await this.getWritePrice()
+        this.writePrice = await this.getWritePrice({ claimTxDetails })
         writePrice = this.writePrice
       } else {
         writePrice = this.writePrice
