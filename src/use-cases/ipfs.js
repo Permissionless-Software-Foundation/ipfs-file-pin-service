@@ -409,7 +409,7 @@ class IpfsUseCases {
       const { pinData } = inObj
       const { cid, tokensBurned, filename, dataPinned, validClaim, claimTxDetails } = pinData
       const cidClass = this.CID.parse(cid)
-      console.log('_tryToGetCid() claimTxDetails: ', claimTxDetails)
+      // console.log('_tryToGetCid() claimTxDetails: ', claimTxDetails)
 
       // Exit if the file is already pinned.
       if (dataPinned) return true
