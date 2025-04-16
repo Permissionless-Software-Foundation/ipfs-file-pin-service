@@ -278,6 +278,9 @@ class IpfsUseCases {
         // this.pinTrackerCnt--
 
         return false
+      } else {
+        pinData.fileSize = fileSize
+        await pinData.save()
       }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
