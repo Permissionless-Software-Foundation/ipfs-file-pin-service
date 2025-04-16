@@ -85,7 +85,9 @@ class FilePinRPC {
   // Get metadata of a file, given a CID.
   async getPins (rpcData) {
     try {
-      const pins = await this.useCases.ipfs.getPinClaims()
+      const { page } = rpcData.payload.params
+
+      const pins = await this.useCases.ipfs.getPinClaims({ page })
 
       return {
         pins,
