@@ -245,19 +245,21 @@ class IpfsRESTControllerLib {
   }
 
   /**
-   * @api {get} /ipfs/pins Get metadata on the the last 20 pinned items
+   * @api {get} /ipfs/pins/:page Get metadata on pinned items
    * @apiPermission public
    * @apiName GetPins
    * @apiGroup REST IPFS
    *
    * @apiExample Example usage:
-   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/pins
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/pins/1
    *
    */
   // Get a paginated list of the latest pin claims.
   async getPins (ctx) {
     try {
-      const pins = await this.useCases.ipfs.getPinClaims()
+      const { page } = ctx.params
+
+      const pins = await this.useCases.ipfs.getPinClaims({ page })
 
       ctx.body = pins
     } catch (err) {

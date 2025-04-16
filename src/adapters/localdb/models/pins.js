@@ -20,7 +20,8 @@ const Pin = new mongoose.Schema({
   dataPinned: { type: Boolean, default: false },
   address: { type: String, default: null },
   recordTime: { type: Number },
-  downloadTries: { type: Number, default: 0 }
+  downloadTries: { type: Number, default: 0 },
+  fileSize: { type: Number, default: null } // Size in bytes
 })
 
 export default mongoose.model('pin', Pin)

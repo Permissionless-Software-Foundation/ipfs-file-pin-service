@@ -916,35 +916,64 @@ class IpfsUseCases {
     try {
       console.log('inObj: ', inObj)
 
+      const PAGE_SIZE = 20
+      const page = inObj.page || 1 // Default to first page if not specified
+      const skip = (page - 1) * PAGE_SIZE
+
       const Pins = this.adapters.localdb.Pins
 
-      const unsortedPins = await Pins.find({})
+      // Get total count for pagination info
+      const totalPins = await Pins.countDocuments({})
+      const totalPages = Math.ceil(totalPins / PAGE_SIZE)
 
-      const sortedPins = unsortedPins.sort(function (a, b) {
-        return b.recordTime - a.recordTime
-      })
+      // Get paginated results, pre-sorted by recordTime descending
+      const sortedPins = await Pins.find({})
+        .sort({ recordTime: -1 })
+        .skip(skip)
+        .limit(PAGE_SIZE)
 
-      let pinLen = 20
-      if (sortedPins.length < 20) { pinLen = sortedPins.length }
-
-      const pins = []
-      for (let i = 0; i < pinLen; i++) {
-        const thisPin = sortedPins[i]
-
-        // Extract selected properties for export.
-        const { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime } = thisPin
+      const pins = sortedPins.map(thisPin => {
+        // Extract selected properties for export
+        const {
+          proofOfBurnTxid,
+          cid,
+          claimTxid,
+          address,
+          filename,
+          validClaim,
+          dataPinned,
+          tokensBurned,
+          recordTime,
+          fileSize
+        } = thisPin
 
         const downloadLink = `${this.config.domainName}/ipfs/download/${cid}`
         const viewLink = `${this.config.domainName}/ipfs/view/${cid}`
 
-        const outObj = { proofOfBurnTxid, cid, claimTxid, address, filename, validClaim, dataPinned, tokensBurned, recordTime, downloadLink, viewLink }
-        pins.push(outObj)
-      }
-
-      // console.log('pins: ', pins)
+        return {
+          proofOfBurnTxid,
+          cid,
+          claimTxid,
+          address,
+          filename,
+          validClaim,
+          dataPinned,
+          tokensBurned,
+          recordTime,
+          downloadLink,
+          viewLink,
+          fileSize
+        }
+      })
 
       return {
         success: true,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          pageSize: PAGE_SIZE,
+          totalItems: totalPins
+        },
         pins
       }
     } catch (err) {
