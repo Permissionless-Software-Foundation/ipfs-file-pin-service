@@ -13,7 +13,7 @@ import FilePinRPC from '../../../../src/controllers/json-rpc/file-pin/index.js'
 import adapters from '../../mocks/adapters/index.js'
 import UseCasesMock from '../../mocks/use-cases/index.js'
 
-describe('#AboutRPC', () => {
+describe('#FilePinRPC', () => {
   let uut
   let sandbox
 
@@ -110,7 +110,13 @@ describe('#AboutRPC', () => {
 
   describe('#getPins', () => {
     it('should get pins', async () => {
-      const rpcData = {}
+      const rpcData = {
+        payload: {
+          params: {
+            page: 1
+          }
+        }
+      }
       sandbox.stub(uut.useCases.ipfs, 'getPinClaims').resolves([])
       const result = await uut.getPins(rpcData)
 
@@ -119,8 +125,16 @@ describe('#AboutRPC', () => {
       assert.equal(result.message, 'pins property is an array of latest 20 pinned items')
       assert.equal(result.endpoint, 'getPins')
     })
+
     it('should handle error', async () => {
-      const rpcData = {}
+      const rpcData = {
+        payload: {
+          params: {
+            page: 1
+          }
+        }
+      }
+
       sandbox.stub(uut.useCases.ipfs, 'getPinClaims').throws(new Error('getPins error'))
       const result = await uut.getPins(rpcData)
 
@@ -130,9 +144,17 @@ describe('#AboutRPC', () => {
       assert.equal(result.endpoint, 'getPins')
     })
   })
+
   describe('#getPins', () => {
     it('should get pins', async () => {
-      const rpcData = {}
+      const rpcData = {
+        payload: {
+          params: {
+            page: 1
+          }
+        }
+      }
+
       sandbox.stub(uut.useCases.ipfs, 'getPinClaims').resolves([])
       const result = await uut.getPins(rpcData)
 
@@ -141,8 +163,16 @@ describe('#AboutRPC', () => {
       assert.equal(result.message, 'pins property is an array of latest 20 pinned items')
       assert.equal(result.endpoint, 'getPins')
     })
+
     it('should handle error', async () => {
-      const rpcData = {}
+      const rpcData = {
+        payload: {
+          params: {
+            page: 1
+          }
+        }
+      }
+
       sandbox.stub(uut.useCases.ipfs, 'getPinClaims').throws(new Error('getPins error'))
       const result = await uut.getPins(rpcData)
 
@@ -152,6 +182,7 @@ describe('#AboutRPC', () => {
       assert.equal(result.endpoint, 'getPins')
     })
   })
+
   describe('#getFileMetadata', () => {
     it('should get file metadatas', async () => {
       const rpcData = {
