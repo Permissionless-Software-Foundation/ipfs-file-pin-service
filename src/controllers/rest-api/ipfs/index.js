@@ -62,7 +62,7 @@ class IpfsRouter {
     this.router.get('/node', this.ipfsRESTController.getThisNode)
     this.router.get('/view/:cid', this.ipfsRESTController.viewFile)
     this.router.get('/view/:cid/:name', this.ipfsRESTController.viewFile)
-    this.router.get('/pins', this.ipfsRESTController.getPins)
+    this.router.get('/pins/:page', this.ipfsRESTController.getPins)
 
     // Attach the Controller routes to the Koa app.
     app.use(this.router.routes())
