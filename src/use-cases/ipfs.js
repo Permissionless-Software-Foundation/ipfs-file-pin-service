@@ -278,9 +278,6 @@ class IpfsUseCases {
         // this.pinTrackerCnt--
 
         return false
-      } else {
-        pinData.fileSize = fileSize
-        await pinData.save()
       }
 
       // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
@@ -317,6 +314,7 @@ class IpfsUseCases {
 
         pinData.dataPinned = true
         pinData.validClaim = true
+        pinData.fileSize = parseInt(fileSize)
         await pinData.save()
       } else {
         // If the file does meet the size requirements, then unpin it.
