@@ -318,7 +318,41 @@ describe('#IPFS REST API', () => {
       assert.isObject(ctx.body)
     })
   })
+  describe('#GET /view/:cid/:name', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        // Force an error
+        sandbox.stub(uut.useCases.ipfs, 'downloadCid').rejects(new Error('test error'))
 
+        ctx.params = {
+          cid: 'fake-cid',
+          name: 'fake-name'
+        }
+
+        await uut.viewFile(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        console.log(err)
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'test error')
+      }
+    })
+
+    it('should return 200 status on success', async () => {
+      // Mock dependencies
+      sandbox.stub(uut.useCases.ipfs, 'downloadCid').resolves({ fileName: 'fake-name', readStream: {} })
+
+      ctx.params = {
+        cid: 'fake-cid'
+      }
+
+      await uut.viewFile(ctx)
+      // console.log('ctx.body: ', ctx.body)
+
+      assert.isObject(ctx.body)
+    })
+  })
   describe('#handleError', () => {
     it('should still throw error if there is no message', () => {
       try {
