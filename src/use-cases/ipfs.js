@@ -445,6 +445,11 @@ class IpfsUseCases {
       //
       // If the model in the database says the file is already pinned and
       // validated, then ensure the file is actually pinned and exit.
+      /**
+       *  DEV NOTE (05/02/25):
+       *  This validation is already handled at the start of this function
+       *  Maybe this validation should be removed?
+       */
       if (dataPinned) {
         // Pin the file
         try {
@@ -504,6 +509,7 @@ class IpfsUseCases {
         pinData.dataPinned = true
         pinData.validClaim = true
         await pinData.save()
+        return true
       } else {
         // If the file does meet the size requirements, then unpin it.
         console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes. Unpinning file.`)
@@ -776,8 +782,9 @@ class IpfsUseCases {
 
   // Remove a pin from the tracker.
   removePinFromTracker (cid) {
+    // TODO : verify that the cid is in the tracker
     delete this.pinTracker[cid]
-    this.pinTrackerCnt--
+    this.pinTrackerCnt-- // TODO : pin tracker count maybe can be handle with  the pin tracker object keys length
 
     return true
   }
@@ -843,6 +850,7 @@ class IpfsUseCases {
        * Skipping this code delivers directly the first file detected in the directory.
        */
       const isDir = contentArray[0].path.match('/') // TODO : looking for a better way to detect if is a directory
+      console.log('isDir: ', isDir, contentArray[0])
       // 'listDir' is a flag to ignore this code on /download endpoint.
       if (isDir && !name && listDir) {
         console.log('This CID is a directory')

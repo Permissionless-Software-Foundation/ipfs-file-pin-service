@@ -81,6 +81,20 @@ describe('#Timer-Controllers', () => {
 
       assert.equal(result, true)
     })
+    it('should handle pin attemps ', async () => {
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7 }])
+      sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: {
+          size: 1
+        }
+      }
+
+      const result = await uut.pinCids()
+
+      assert.equal(result, true)
+    })
 
     it('should return false on error', async () => {
       const result = await uut.pinCids()
@@ -101,6 +115,37 @@ describe('#Timer-Controllers', () => {
       const result = await uut.cleanUsage()
 
       assert.equal(result, false)
+    })
+  })
+
+  describe('#reportQueueSize', () => {
+    it('should return the size of the validation queue', async () => {
+      // Mock dependencies and force desired code path
+      const mockSizeValue = 7
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: {
+          size: mockSizeValue
+        }
+      }
+      const result = await uut.reportQueueSize()
+
+      assert.equal(result, mockSizeValue)
+    })
+
+    it('should return false on error', async () => {
+      // Mock dependencies and force desired code path
+      uut.useCases.ipfs.retryQueue = null
+      const result = await uut.reportQueueSize()
+
+      assert.isFalse(result)
+    })
+  })
+  describe('#autoReboot', () => {
+    it('should reboot the system', async () => {
+      const spy = sandbox.stub(process, 'exit').resolves()
+
+      await uut.autoReboot()
+      assert.equal(spy.callCount, 1)
     })
   })
 })

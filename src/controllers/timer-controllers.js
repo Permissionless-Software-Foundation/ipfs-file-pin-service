@@ -71,6 +71,7 @@ class TimerControllers {
 
       const queueSize = this.useCases.ipfs.retryQueue.validationQueue.size
       console.log(`There are ${queueSize} promises in the download queue.`)
+      return queueSize
     } catch (err) {
       console.error('Error in timer-controllers.js/reportQueueSize(): ', err)
       // Do not throw an error. This is a top-level function.
