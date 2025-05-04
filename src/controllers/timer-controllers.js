@@ -39,7 +39,7 @@ class TimerControllers {
     this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
     // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
-    this.ENFORCE_MODERATION_INTERVAL = 1000 * 15 // 15 seconds
+    this.ENFORCE_MODERATION_INTERVAL = 60000 * 60 * 1 // 1 hour
   }
 
   // Start all the time-based controllers.
@@ -162,8 +162,6 @@ class TimerControllers {
   // Enforce moderation rules on the Pin Claims. Will delete and de-pin files
   // matching the rules.
   enforceModerationRules () {
-    console.log('enforceModerationRules() Timer Controller fired.')
-
     try {
       this.useCases.moderation.enforceModerationRules()
 

@@ -31,6 +31,9 @@ class ModerationUseCases {
   async enforceModerationRules () {
     try {
       if (this.config.useModeration) {
+        const now = new Date()
+        console.log(`Started enforceModerationRules() at ${now.toLocaleString()}`)
+
         // Dynamically import each moderation library
         const moderationLibs = this.config.moderationLibs
         this.moderationArray = [] // Default value
@@ -44,18 +47,18 @@ class ModerationUseCases {
         }
         console.log('this.moderationArray', this.moderationArray)
 
-        // Pins MongoDB model.
+        // Database model tracking all pinned files.
         const Pins = this.adapters.localdb.Pins
 
         // Loop through each file in the moderation array.
         for (let i = 0; i < this.moderationArray.length; i++) {
           const file = this.moderationArray[i]
-          console.log('file', file)
+          // console.log('file', file)
 
           // See if we have the file in the database.
           const pin = await Pins.findOne({ filename: file.filename })
           if (pin) {
-            console.log('pin', pin)
+            // console.log('pin', pin)
 
             // Convert the CID from a string to a CID Class object.
             const cidClass = this.CID.parse(pin.cid)
@@ -72,8 +75,6 @@ class ModerationUseCases {
 
             // Delete the pin from the database.
             await pin.remove()
-          } else {
-            console.log('pin not found')
           }
         }
       }
@@ -81,6 +82,9 @@ class ModerationUseCases {
       console.error('Error in moderation.js/enforceModerationRules()')
       throw err
     }
+
+    const now = new Date()
+    console.log(`Finished enforceModerationRules() at ${now.toLocaleString()}`)
   }
 }
 
