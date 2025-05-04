@@ -175,6 +175,6 @@ export default {
   useModeration: process.env.USE_MODERATION === 'true',
   moderationLibs: process.env.MODERATION_LIBS
     ? process.env.MODERATION_LIBS.split(',')
-    : ['some-npm-lib', 'another-lib']
+    : []
 
 }

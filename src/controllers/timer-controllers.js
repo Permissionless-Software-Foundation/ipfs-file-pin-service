@@ -33,11 +33,13 @@ class TimerControllers {
     this.startTimers = this.startTimers.bind(this)
     this.stopTimers = this.stopTimers.bind(this)
     this.cleanUsage = this.cleanUsage.bind(this)
+    this.enforceModerationRules = this.enforceModerationRules.bind(this)
 
     // Encapsulate constants
     this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
     // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
+    this.ENFORCE_MODERATION_INTERVAL = 1000 * 15 // 15 seconds
   }
 
   // Start all the time-based controllers.
@@ -57,12 +59,15 @@ class TimerControllers {
 
     this.cleanUsageHandle = setInterval(this.cleanUsage, 60000 * 60) // 1 hour
 
+    this.enforceModerationHandle = setInterval(this.enforceModerationRules, this.ENFORCE_MODERATION_INTERVAL)
+
     return true
   }
 
   stopTimers () {
     clearInterval(this.pinCidsHandle)
     clearInterval(this.cleanusageHandle)
+    clearInterval(this.enforceModerationHandle)
   }
 
   reportQueueSize () {

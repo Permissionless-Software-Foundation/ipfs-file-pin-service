@@ -29,21 +29,33 @@ class ModerationUseCases {
       if (this.config.useModeration) {
         // Dynamically import each moderation library
         const moderationLibs = this.config.moderationLibs
-        this.moderationModules = []
+        this.moderationArray = [] // Default value
 
+        // Combine all dynamically imported libraries into a single array.
         for (const libName of moderationLibs) {
-          // Dynamic import
+          // Dynamic import. Each imported library is expected to be an array
+          // of objects.
           const mod = await import(libName)
-          this.moderationModules.push(mod)
+          this.moderationArray = this.moderationArray.concat(mod.default)
         }
+        console.log('this.moderationArray', this.moderationArray)
 
-        // Now you can use this.moderationModules as needed
-        // Example: call a function on each module
-        // for (const mod of this.moderationModules) {
-        //   if (mod.default && typeof mod.default === 'function') {
-        //     await mod.default()
-        //   }
-        // }
+        // Pins MongoDB model.
+        const Pins = this.adapters.localdb.Pins
+
+        // Loop through each file in the moderation array.
+        for (let i = 0; i < this.moderationArray.length; i++) {
+          const file = this.moderationArray[i]
+          console.log('file', file)
+
+          // See if we have the file in the database.
+          const pin = await Pins.findOne({ filename: file.filename })
+          if (pin) {
+            console.log('pin', pin)
+          } else {
+            console.log('pin not found')
+          }
+        }
       }
     } catch (err) {
       console.error('Error in moderation.js/enforceModerationRules()')
