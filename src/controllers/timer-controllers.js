@@ -153,6 +153,23 @@ class TimerControllers {
       return false
     }
   }
+
+  // Enforce moderation rules on the Pin Claims. Will delete and de-pin files
+  // matching the rules.
+  enforceModerationRules () {
+    console.log('enforceModerationRules() Timer Controller fired.')
+
+    try {
+      this.useCases.moderation.enforceModerationRules()
+
+      return true
+    } catch (err) {
+      console.error('Error in time-controller.js/enforceModerationRules(): ', err)
+
+      // Note: Do not throw an error. This is a top-level function.
+      return false
+    }
+  }
 }
 
 export default TimerControllers

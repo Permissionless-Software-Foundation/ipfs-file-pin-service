@@ -167,8 +167,14 @@ export default {
   reqTokenQty: 0.03570889,
 
   // domainName: 'https://pin.fullstack.cash'
-  domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031'
+  domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031',
 
   // END FILE PIN CONFIGURATION
+
+  // Enable or disable moderation.
+  useModeration: process.env.USE_MODERATION === 'true',
+  moderationLibs: process.env.MODERATION_LIBS
+    ? process.env.MODERATION_LIBS.split(',')
+    : ['some-npm-lib', 'another-lib']
 
 }
