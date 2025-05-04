@@ -2,6 +2,9 @@
   Use cases library for enforcing moderation rules on the Pin Claims.
 */
 
+// Global libraries
+import { CID } from 'multiformats'
+
 // Local libraries
 import config from '../../config/index.js'
 
@@ -17,6 +20,7 @@ class ModerationUseCases {
 
     // Encapsulate dependencies
     this.config = config
+    this.CID = CID
 
     // Bind 'this' object to all subfunctions
     this.enforceModerationRules = this.enforceModerationRules.bind(this)
@@ -52,6 +56,22 @@ class ModerationUseCases {
           const pin = await Pins.findOne({ filename: file.filename })
           if (pin) {
             console.log('pin', pin)
+
+            // Convert the CID from a string to a CID Class object.
+            const cidClass = this.CID.parse(pin.cid)
+
+            if (pin.dataPinned) {
+              // Delete the file from the IPFS node.
+              await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
+              console.log(`Deleted file ${pin.filename} with CID ${pin.cid} from IPFS node.`)
+            }
+
+            // Unpin the file from the IPFS node.
+            await this.adapters.ipfs.ipfs.pins.rm(cidClass)
+            console.log(`Unpinned file ${pin.filename} with CID ${pin.cid} from IPFS node.`)
+
+            // Delete the pin from the database.
+            await pin.remove()
           } else {
             console.log('pin not found')
           }
