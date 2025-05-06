@@ -1,8 +1,8 @@
 # Moderation
 
-ipfs-file-pin-service has an optional moderation feature that can be enabled with the use of environment variables. This feature allows operators of ipfs-file-pin-service to comply with moderation policies in their local jurisdiction, without infringing on other operators around the globe.
+ipfs-file-pin-service has an optional moderation feature that can be enabled with the use of environment variables. This feature allows operators of ipfs-file-pin-service to comply with moderation policies in their local jurisdiction, without forcing operators in other jurisdictions to operate by the same rules.
 
-Moderation is achieved by loading an npm library that resolves to an array of CIDs. For example, the [psffpp-usa-moderation](https://github.com/Permissionless-Software-Foundation/psffpp-usa-moderation) is a library built for operating in the USA who receive DMCA take-down notices. Operators in the USA can run these moderation rules to comply with their jurisdiction, but operators outside that jurisdiction are no required to run it.
+Moderation is achieved by loading an npm library that resolves to an array of CIDs. For example, the [psffpp-usa-moderation](https://github.com/Permissionless-Software-Foundation/psffpp-usa-moderation) is a library built for operating in the USA who receive DMCA take-down notices. Operators in the USA can run these moderation rules to comply with their jurisdiction, but operators outside that jurisdiction are not required to run it.
 
 Below is an example for installing and running the psffpp-usa-moderation library, and enabling the moderation feature:
 
