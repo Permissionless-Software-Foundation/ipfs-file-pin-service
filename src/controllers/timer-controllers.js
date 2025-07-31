@@ -35,7 +35,7 @@ class TimerControllers {
     this.cleanUsage = this.cleanUsage.bind(this)
 
     // Encapsulate constants
-    this.PIN_CID_INTERVAL = 60000 * 32 // 32 minutes
+    this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
     // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
   }
