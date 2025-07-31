@@ -92,37 +92,45 @@ class IpfsUseCases {
 
   // Get the cost to write 1MB per year of data to the PSFFPP network.
   async getWritePrice (inObj = {}) {
-    const { claimTxDetails } = inObj
-    console.log('getWritePrice() claimTxDetails: ', claimTxDetails)
+    try {
+      const { claimTxDetails } = inObj
+      console.log('getWritePrice() claimTxDetails: ', claimTxDetails)
 
-    // Old code
-    // if (!this.writePrice) {
-    //   this.writePrice = await this.adapters.writePrice.getMcWritePrice()
-    // }
-    // return this.writePrice
+      // Old code
+      // if (!this.writePrice) {
+      //   this.writePrice = await this.adapters.writePrice.getMcWritePrice()
+      // }
+      // return this.writePrice
 
-    if (!this.psffpp) {
-      this.psffpp = new PSFFPP({ wallet: this.wallet })
+      if (!this.psffpp) {
+        this.psffpp = new PSFFPP({ wallet: this.wallet })
+      }
+
+      // this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
+      // console.log('this.writePrice: ', this.writePrice)
+
+      const writeHistory = await this.retryQueue.addToQueue(this.psffpp.getWritePriceHistory, {})
+      console.log('claimTxDetails() writeHistory: ', writeHistory)
+
+      const height = claimTxDetails.height
+
+      if (!height) {
+        // Return the current write price if this is an unconfirmed TX.
+        this.writePrice = writeHistory[0].writePrice
+      } else {
+        // Return the price for the block height of the claim.
+        const price = writeHistory.find(element => element.height <= height)
+        this.writePrice = price.writePrice
+      }
+
+      return this.writePrice
+    } catch (err) {
+      this.writePrice = 0.03570889
+
+      console.error(`Error in use-cases/ipfs.js/getWritePrice(). Returning hard-coded value of ${this.writePrice}.`)
+
+      return this.writePrice
     }
-
-    // this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
-    // console.log('this.writePrice: ', this.writePrice)
-
-    const writeHistory = await this.retryQueue.addToQueue(this.psffpp.getWritePriceHistory, {})
-    console.log('claimTxDetails() writeHistory: ', writeHistory)
-
-    const height = claimTxDetails.height
-
-    if (!height) {
-      // Return the current write price if this is an unconfirmed TX.
-      this.writePrice = writeHistory[0].writePrice
-    } else {
-      // Return the price for the block height of the claim.
-      const price = writeHistory.find(element => element.height <= height)
-      this.writePrice = price.writePrice
-    }
-
-    return this.writePrice
   }
 
   // Process a new pin claim by adding it to the database.
