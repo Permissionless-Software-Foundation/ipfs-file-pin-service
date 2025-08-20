@@ -36,7 +36,6 @@ class TimerControllers {
 
     // Encapsulate constants
     this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
-    // this.PIN_CID_INTERVAL = 60000 * 12 // 12 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
   }
 
@@ -44,7 +43,6 @@ class TimerControllers {
   startTimers () {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
-    // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
     // Periodically report the number of files in the download queue
     setInterval(this.reportQueueSize, 60000 * 2)
@@ -119,7 +117,7 @@ class TimerControllers {
       console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
 
       // Restart the timer interval after it completes.
-      // this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
+      this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
 
       return true
     } catch (err) {
