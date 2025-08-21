@@ -33,10 +33,15 @@ class TimerControllers {
     this.startTimers = this.startTimers.bind(this)
     this.stopTimers = this.stopTimers.bind(this)
     this.cleanUsage = this.cleanUsage.bind(this)
+    this.clearDownloadTries = this.clearDownloadTries.bind(this)
 
     // Encapsulate constants
+    this.FIRST_PIN_CID_DELAY = 60000 * 4 // 4 minutes
     this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
     this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
+    this.CLEAR_DOWNLOAD_TRIES_INTERVAL = 60000 * 60 * 3.5 // 3.5 hours
+    this.REPORT_QUEUE_SIZE_INTERVAL = 60000 * 2 // 2 minutes
+    this.CLEAN_USAGE_INTERVAL = 60000 * 60 // 1 hour
   }
 
   // Start all the time-based controllers.
@@ -44,16 +49,25 @@ class TimerControllers {
     // Any new timer control functions can be added here. They will be started
     // when the server starts.
 
-    // Periodically report the number of files in the download queue
-    setInterval(this.reportQueueSize, 60000 * 2)
-
-    this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
-
-    // Start the pinCids() function after a few minutes after startup, once
+    // Start the pinCids() function a few minutes after startup, once
     // the Helia node has had time to connect to the IPFS network.
-    setTimeout(this.pinCids, 60000 * 4)
+    setTimeout(this.pinCids, this.FIRST_PIN_CID_DELAY)
 
-    this.cleanUsageHandle = setInterval(this.cleanUsage, 60000 * 60) // 1 hour
+    // Periodically report the number of files in the download queue
+    setInterval(this.reportQueueSize, this.REPORT_QUEUE_SIZE_INTERVAL)
+
+    // Clean up usage metrics
+    this.cleanUsageHandle = setInterval(this.cleanUsage, this.CLEAN_USAGE_INTERVAL)
+
+    // Clear the downloadTries property of each Pin object in the database.
+    // This allows file downloads to be retried, but only after all files have
+    // attempted to be downloaded at least 10 times.
+    setTimeout(this.clearDownloadTries, this.CLEAR_DOWNLOAD_TRIES_INTERVAL)
+
+    // Periodically reboot this app. Helia has a slight memory leak, and occasionally
+    // runs into unrecoverable network issues. Rebooting is one way to overcome these
+    // black-box issues.
+    this.rebootHandle = setInterval(this.autoReboot, this.REBOOT_INTERVAL)
 
     return true
   }
@@ -82,7 +96,7 @@ class TimerControllers {
   async pinCids () {
     try {
       let now = new Date()
-      console.log(`pinCids() Timer Controller started at ${now.toLocaleString()}`)
+      console.log(`pinCids() Timer Controller STARTED at ${now.toLocaleString()}`)
 
       // Stop the timer interval from executing if a previous instance is still
       // executing.
@@ -114,7 +128,7 @@ class TimerControllers {
       console.log(`${promiseQueueSize} promises in queue at end of Timer Controller.`)
 
       now = new Date()
-      console.log(`pinCids() Timer Controller finished at ${now.toLocaleString()}`)
+      console.log(`pinCids() Timer Controller FINISHED at ${now.toLocaleString()}`)
 
       // Restart the timer interval after it completes.
       this.pinCidsHandle = setInterval(this.pinCids, this.PIN_CID_INTERVAL)
@@ -124,6 +138,26 @@ class TimerControllers {
       console.error('Error in timer-controllers.js/pinCids(): ', err)
       // Do not throw an error. This is a top-level function.
       return false
+    }
+  }
+
+  // This function is intended to be called no more than once per day.
+  // It clears the downloadTries property of each Pin object in the database.
+  // This allows file downloads to be retried, but only after all files have
+  // attempted to be downloaded at least 10 times.
+  async clearDownloadTries () {
+    try {
+      const Pins = this.adapters.localdb.Pins
+      const pins = await Pins.find({})
+      for (let i = 0; i < pins.length; i++) {
+        const thisPin = pins[i]
+        thisPin.downloadTries = 0
+        await thisPin.save()
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error in timer-controllers.js/clearDownloadTries(): ', err)
     }
   }
 
