@@ -38,8 +38,8 @@ class TimerControllers {
     // Encapsulate constants
     this.FIRST_PIN_CID_DELAY = 60000 * 4 // 4 minutes
     this.PIN_CID_INTERVAL = 60000 * 10 // 10 minutes
-    this.REBOOT_INTERVAL = 60000 * 60 * 4 // 4 hours
-    this.CLEAR_DOWNLOAD_TRIES_INTERVAL = 60000 * 60 * 3.5 // 3.5 hours
+    this.REBOOT_INTERVAL = 60000 * 60 * 6 // 6 hours
+    this.CLEAR_DOWNLOAD_TRIES_INTERVAL = 60000 * 60 * 5.5 // 5.5 hours
     this.REPORT_QUEUE_SIZE_INTERVAL = 60000 * 2 // 2 minutes
     this.CLEAN_USAGE_INTERVAL = 60000 * 60 // 1 hour
   }
@@ -110,6 +110,9 @@ class TimerControllers {
       // Get all pins in the database
       const pins = await Pins.find({})
       console.log(`There are ${pins.length} Pin Claims in the database.`)
+
+      const downloadedPins = pins.filter(pin => pin.dataPinned)
+      console.log(`${downloadedPins.length} Pin Claims have been downloaded and pinned.`)
 
       const numTrackedPins = this.useCases.ipfs.pinTrackerCnt
       console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)

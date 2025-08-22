@@ -423,7 +423,7 @@ class IpfsUseCases {
       // Exit if the file is already pinned.
       if (dataPinned) return true
 
-      console.log(`CID ${cid} validClaim: ${validClaim}, dataPinned: ${dataPinned}`)
+      console.log(`Processing CID ${cid}. validClaim: ${validClaim}, dataPinned: ${dataPinned}`)
 
       // Add the CID to the tracker, so that we don't try to download or pin
       // the same file twice.
