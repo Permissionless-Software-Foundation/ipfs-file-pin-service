@@ -117,11 +117,22 @@ class TimerControllers {
       const numTrackedPins = this.useCases.ipfs.pinTrackerCnt
       console.log(`There are ${numTrackedPins} Pin Claims currently being tracked.`)
 
-      // Reverse the order of processing the pins. Start with the most-recent first.
-      for (let i = pins.length - 1; i >= 0; i--) {
-        const thisPin = pins[i]
+      // // Reverse the order of processing the pins. Start with the most-recent first.
+      // for (let i = pins.length - 1; i >= 0; i--) {
+      //   const thisPin = pins[i]
 
-        // After 10 tries, stop trying to pin the file. It needs manual intervention.
+      //   // After 10 tries, stop trying to pin the file. It needs manual intervention.
+      //   if (thisPin.downloadTries < 10) {
+      //     await this.useCases.ipfs.pinCidForTimerController(thisPin)
+      //   }
+      // }
+
+      // Order the pins in ascending order based on the downloadTries property.
+      const orderedPins = pins.sort((a, b) => a.downloadTries - b.downloadTries)
+
+      // Pin the files that have had the fewest tries first.
+      for (let i = 0; i < orderedPins.length; i++) {
+        const thisPin = orderedPins[i]
         if (thisPin.downloadTries < 10) {
           await this.useCases.ipfs.pinCidForTimerController(thisPin)
         }
