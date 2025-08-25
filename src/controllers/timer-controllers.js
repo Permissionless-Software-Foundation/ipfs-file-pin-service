@@ -130,8 +130,12 @@ class TimerControllers {
       // Order the pins in ascending order based on the downloadTries property.
       const orderedPins = pins.sort((a, b) => a.downloadTries - b.downloadTries)
 
+      // Limit the number of pins to process in each round.
+      let numberOfPinsToProcess = 30
+      if (orderedPins.length < 30) numberOfPinsToProcess = orderedPins.length
+
       // Pin the files that have had the fewest tries first.
-      for (let i = 0; i < orderedPins.length; i++) {
+      for (let i = 0; i < numberOfPinsToProcess; i++) {
         const thisPin = orderedPins[i]
         if (thisPin.downloadTries < 10) {
           await this.useCases.ipfs.pinCidForTimerController(thisPin)
