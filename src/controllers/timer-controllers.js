@@ -137,7 +137,7 @@ class TimerControllers {
       // Pin the files that have had the fewest tries first.
       for (let i = 0; i < numberOfPinsToProcess; i++) {
         const thisPin = orderedPins[i]
-        if (thisPin.downloadTries < 10) {
+        if (thisPin.downloadTries < 5) {
           await this.useCases.ipfs.pinCidForTimerController(thisPin)
         }
       }
