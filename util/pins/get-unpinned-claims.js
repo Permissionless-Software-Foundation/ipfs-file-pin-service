@@ -21,9 +21,9 @@ async function getUnpinnedPins () {
 
   // Remove pobTxDetails and claimTxDetails from the pin data.
   const reducedPins = []
-  for(let i=0; i<pins.length; i++) {
+  for (let i = 0; i < pins.length; i++) {
     const pin = pins[i]
-    
+
     const { validClaim, dataPinned, address, downloadTries, fileSize, proofOfBurnTxid, cid, claimTxid, filename } = pin
 
     const reducedPin = { validClaim, dataPinned, address, downloadTries, fileSize, proofOfBurnTxid, cid, claimTxid, filename }
@@ -33,7 +33,6 @@ async function getUnpinnedPins () {
 
   console.log(`unpinnedPins: ${JSON.stringify(reducedPins, null, 2)}`)
   console.log(`unpinnedPins length: ${pins.length}`)
-
 
   mongoose.connection.close()
 }
