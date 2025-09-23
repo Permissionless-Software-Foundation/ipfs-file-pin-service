@@ -41,6 +41,7 @@ class IpfsRESTControllerLib {
     this.getThisNode = this.getThisNode.bind(this)
     this.viewFile = this.viewFile.bind(this)
     this.getPins = this.getPins.bind(this)
+    this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
   }
 
   /**
@@ -264,6 +265,28 @@ class IpfsRESTControllerLib {
       ctx.body = pins
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/getPins(): ', err)
+      this.handleError(ctx, err)
+    }
+  }
+
+  /**
+   * @api {get} /ipfs/unprocessed-pins Get unprocessed pin claims
+   * @apiPermission public
+   * @apiName GetUnprocessedPins
+   * @apiGroup REST IPFS
+   * @apiDescription Returns an array of pins that have a validClaim property of null.
+   *
+   * @apiExample Example usage:
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/unprocessed-pins
+   *
+   */
+  async getUnprocessedPins (ctx) {
+    try {
+      const pins = await this.useCases.ipfs.getUnprocessedPins()
+
+      ctx.body = pins
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/getUnprocessedPins(): ', err)
       this.handleError(ctx, err)
     }
   }

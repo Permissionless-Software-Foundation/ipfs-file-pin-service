@@ -80,6 +80,7 @@ class IpfsUseCases {
     this.getPinStatus = this.getPinStatus.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.getPinClaims = this.getPinClaims.bind(this)
+    this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
 
     // State
     this.pinTracker = {} // track promises for pinning content
@@ -995,6 +996,20 @@ class IpfsUseCases {
       }
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/getPinClaims()')
+      throw err
+    }
+  }
+
+  // Get an array of pins that have a validClaim property of null.
+  async getUnprocessedPins () {
+    try {
+      const Pins = this.adapters.localdb.Pins
+      const pins = await Pins.find({ validClaim: null })
+      // console.log(`getUnprocessedPins(): ${JSON.stringify(pins, null, 2)}`)
+
+      return pins
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/getUnprocessedPins(): ', err)
       throw err
     }
   }
