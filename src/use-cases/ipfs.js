@@ -301,6 +301,7 @@ class IpfsUseCases {
       // size requirement.
       // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
       const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
+      console.log('pinCid() isValid: ', isValid)
 
       this.pinTrackerCnt--
       tracker.isValid = isValid
@@ -494,6 +495,7 @@ class IpfsUseCases {
       // }
       // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
       const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
+      console.log('_tryToGetCid() isValid: ', isValid)
 
       // tracker.isValid = isValid
       // tracker.completed = true
@@ -599,6 +601,7 @@ class IpfsUseCases {
       // Calculate costs in PSF tokens for this pin request.
       const mbCost = fileSize / 1000000 * writePrice
       const minCost = mbCost * 0.98
+      console.log('minCost: ', minCost)
 
       // Validate that enough PSF tokens were paid for this pin.
       if (tokensBurned < minCost) {
