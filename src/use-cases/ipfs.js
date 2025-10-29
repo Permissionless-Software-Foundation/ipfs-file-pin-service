@@ -555,7 +555,10 @@ class IpfsUseCases {
         return false
       }
     } catch (err) {
-      console.error('Error in tryToGetCid(): ', err)
+      console.error('Error in _tryToGetCid(): ', err)
+
+      console.log('_tryToGetCid() inObj: ', inObj)
+
       throw err
     }
   }
