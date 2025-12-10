@@ -416,4 +416,26 @@ describe('#IPFS REST API', () => {
       assert.property(ctx.body, 'thisNode')
     })
   })
+  describe('#pinLocalFile', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        await uut.pinLocalFile(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'Cannot read')
+      }
+    })
+
+    it('should return 200 status on success', async () => {
+      // Mock dependencies
+      sandbox.stub(uut.useCases.ipfs, 'pinLocalFile').resolves({ success: true, cid: 'cid' })
+      ctx.request.files = { file: { originalFilename: 'test.txt', size: 1000, filepath: 'test.txt' } }
+
+      await uut.pinLocalFile(ctx)
+
+      assert.property(ctx.body, 'cid')
+    })
+  })
 })

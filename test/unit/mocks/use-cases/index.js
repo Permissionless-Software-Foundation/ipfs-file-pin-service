@@ -59,6 +59,9 @@ class IpfsUseCaseMock {
   async getWritePrice() {
     return 0.08
   }
+  async pinLocalFile() {
+    return {}
+  }
 }
 
 class UsageUseCaseMock {

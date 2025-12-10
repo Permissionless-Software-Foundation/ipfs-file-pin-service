@@ -929,4 +929,78 @@ describe('#ipfs-use-case', () => {
       assert.equal(uut.pinTracker.cid, 'pinned')
     })
   })
+  describe('#pinLocalFile', () => {
+    it('should upload a file', async () => {
+      const fileMock = {
+        originalFilename: 'test.txt',
+        size: 100,
+        filepath: 'test.txt'
+      }
+      sandbox.stub(uut.fs, 'createReadStream').returns('content')
+      const result = await uut.pinLocalFile({ file: fileMock })
+
+      assert.isObject(result)
+      assert.property(result, 'success')
+      assert.property(result, 'cid')
+    })
+
+    it('should handle error if file size is too large', async () => {
+      try {
+        const fileMock = {
+          originalFilename: 'test.txt',
+          size: 100000000 + 1,
+          filepath: 'test.txt'
+        }
+        await uut.pinLocalFile({ file: fileMock })
+
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.equal(error.message, 'File exceeds max file size of 100000000')
+      }
+    })
+    it('should handle ipfs addFile error', async () => {
+      try {
+        sandbox.stub(uut.fs, 'createReadStream').returns('content')
+        sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'addFile').throws(new Error('ipfs error'))
+        const fileMock = {
+          originalFilename: 'test.txt',
+          size: 1000,
+          filepath: 'test.txt'
+        }
+        await uut.pinLocalFile({ file: fileMock })
+
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.equal(error.message, 'ipfs error')
+      }
+    })
+    it('should skip error if file is already pinned', async () => {
+      sandbox.stub(uut.fs, 'createReadStream').returns('content')
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').throws(new Error('Already pinned'))
+      const fileMock = {
+        originalFilename: 'test.txt',
+        size: 1000,
+        filepath: 'test.txt'
+      }
+      const result = await uut.pinLocalFile({ file: fileMock })
+
+      assert.isTrue(result.success)
+    })
+    it('should handle error if file is not pinned', async () => {
+      try {
+        sandbox.stub(uut.fs, 'createReadStream').returns('content')
+        sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').throws(new Error('ipfs error'))
+        const fileMock = {
+          originalFilename: 'test.txt',
+          size: 1000,
+          filepath: 'test.txt'
+        }
+        await uut.pinLocalFile({ file: fileMock })
+
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.equal(error.message, 'ipfs error')
+      }
+    })
+  })
 })
