@@ -944,20 +944,21 @@ describe('#ipfs-use-case', () => {
       assert.property(result, 'cid')
     })
 
-    it('should handle error if file size is too large', async () => {
-      try {
-        const fileMock = {
-          originalFilename: 'test.txt',
-          size: 100000000 + 1,
-          filepath: 'test.txt'
-        }
-        await uut.pinLocalFile({ file: fileMock })
+    // it('should handle error if file size is too large', async () => {
+    //   try {
+    //     const fileMock = {
+    //       originalFilename: 'test.txt',
+    //       size: 100000000 + 1,
+    //       filepath: 'test.txt'
+    //     }
+    //     await uut.pinLocalFile({ file: fileMock })
 
-        assert.fail('Unexpected code path')
-      } catch (error) {
-        assert.equal(error.message, 'File exceeds max file size of 100000000')
-      }
-    })
+    //     assert.fail('Unexpected code path')
+    //   } catch (error) {
+    //     assert.equal(error.message, 'File exceeds max file size of 100000000')
+    //   }
+    // })
+    
     it('should handle ipfs addFile error', async () => {
       try {
         sandbox.stub(uut.fs, 'createReadStream').returns('content')

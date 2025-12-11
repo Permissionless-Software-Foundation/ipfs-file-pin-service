@@ -1032,10 +1032,10 @@ class IpfsUseCases {
       console.log(`File ${filename} with size ${size} bytes recieved.`)
 
       // Reject if file is bigger than 100 MB.
-      const maxFileSize = 100000000
-      if (size > maxFileSize) {
-        throw new Error(`File exceeds max file size of ${maxFileSize}`)
-      }
+      // const maxFileSize = 100000000
+      // if (size > maxFileSize) {
+      //   throw new Error(`File exceeds max file size of ${maxFileSize}`)
+      // }
 
       const readStream = this.fs.createReadStream(file.filepath)
       // console.log('readStream: ', readStream)
