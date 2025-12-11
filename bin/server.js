@@ -66,7 +66,16 @@ class Server {
       // MIDDLEWARE START
 
       app.use(convert(logger()))
-      app.use(koaBody({ multipart: true }))
+      app.use(koaBody({
+        multipart: true,
+        maxFileSize: 10 * 1024 * 1024 * 1024, // 10GB
+        jsonLimit: 10 * 1024 * 1024 * 1024, // 10GB
+        formLimit: 10 * 1024 * 1024 * 1024, // 10GB
+        textLimit: 10 * 1024 * 1024 * 1024, // 10GB
+        formidable: {
+          maxFileSize: 10 * 1024 * 1024 * 1024 // 10GB
+        }
+      }))
       app.use(bodyParser())
       app.use(session())
       app.use(errorMiddleware())
