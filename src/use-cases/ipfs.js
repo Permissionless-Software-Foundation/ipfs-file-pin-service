@@ -23,10 +23,11 @@ import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
 import Stream, { Duplex } from 'stream'
 import PSFFPP from 'psffpp'
-
+import fs from 'fs'
 // Local libraries
 import PinEntity from '../entities/pin.js'
 import config from '../../config/index.js'
+import LocalPinsEntity from '../entities/local-pins.js'
 
 const PSF_TOKEN_ID = '38e97c5d7d3585a2cbf3f9580c82ca33985f9cb0845d4dcce220cb709f9538b0'
 
@@ -54,7 +55,7 @@ class IpfsUseCases {
         restURL: 'https://free-bch.fullstack.cash'
       })
     }
-
+    this.fs = fs
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
       concurrency: 20,
@@ -62,6 +63,7 @@ class IpfsUseCases {
       timeout: 60000 * 5 // Note: Timeout feature does not work is v1.0.10
     })
     this.pinEntity = new PinEntity()
+    this.localPinsEntity = new LocalPinsEntity()
     this.CID = CID
     this.config = config
 
@@ -81,6 +83,7 @@ class IpfsUseCases {
     this.downloadCid = this.downloadCid.bind(this)
     this.getPinClaims = this.getPinClaims.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
+    this.pinLocalFile = this.pinLocalFile.bind(this)
 
     // State
     this.pinTracker = {} // track promises for pinning content
@@ -1016,6 +1019,72 @@ class IpfsUseCases {
       return pins
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/getUnprocessedPins(): ', err)
+      throw err
+    }
+  }
+
+  async pinLocalFile (inObj = {}) {
+    try {
+      const { file } = inObj
+
+      const filename = file.originalFilename
+      const size = file.size
+      console.log(`File ${filename} with size ${size} bytes recieved.`)
+
+      // Reject if file is bigger than 100 MB.
+      const maxFileSize = 100000000
+      if (size > maxFileSize) {
+        throw new Error(`File exceeds max file size of ${maxFileSize}`)
+      }
+
+      const readStream = this.fs.createReadStream(file.filepath)
+      // console.log('readStream: ', readStream)
+
+      const fileObj = {
+        path: filename,
+        content: readStream
+      }
+      // console.log('fileObj: ', fileObj)
+
+      const options = {
+        cidVersion: 1,
+        wrapWithDirectory: true
+      }
+
+      const fileData = await this.adapters.ipfs.ipfs.fs.addFile(fileObj, options)
+      console.log('fileData: ', fileData)
+      const cid = fileData.toString()
+
+      try {
+        // Pin the CID to the IPFS node.
+        for await (const chunk of this.adapters.ipfs.ipfs.pins.add(fileData)) { console.log('ipfs add chunk: ', chunk) }
+        // Validate the data and create a new LocalPins entity.
+        const localPinsEntity = this.localPinsEntity.validate({
+          CID: cid,
+          fileSize: size,
+          filename
+        })
+        console.log('localPinsEntity: ', localPinsEntity)
+        // Create a new LocalPins model.
+        const localPinsModel = new this.adapters.localdb.LocalPins(localPinsEntity)
+        // Save the model to the database.
+        await localPinsModel.save()
+      } catch (err) {
+        // If the CID is already pinned, log a message and continue.
+        if (err.message.includes('Already pinned')) {
+          console.log(`CID ${cid} already pinned.`)
+        } else {
+          // If the CID is not pinned, throw an error.
+          throw err
+        }
+      }
+
+      return {
+        success: true,
+        cid
+      }
+    } catch (err) {
+      console.error('Error in ipfs-use-cases.js/pinLocalFile()')
       throw err
     }
   }

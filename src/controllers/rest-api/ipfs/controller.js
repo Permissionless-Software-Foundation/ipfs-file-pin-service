@@ -42,6 +42,7 @@ class IpfsRESTControllerLib {
     this.viewFile = this.viewFile.bind(this)
     this.getPins = this.getPins.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
+    this.pinLocalFile = this.pinLocalFile.bind(this)
   }
 
   /**
@@ -287,6 +288,55 @@ class IpfsRESTControllerLib {
       ctx.body = pins
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/getUnprocessedPins(): ', err)
+      this.handleError(ctx, err)
+    }
+  }
+
+  /**
+   * @api {post} /ipfs/pin-local-file Upload and pin a file to the local IPFS node.
+   * @apiPermission public
+   * @apiName PinLocalFile
+   * @apiGroup REST IPFS
+   *
+   * @apiDescription Upload and pin a file via HTTP multipart form data and add it to the localIPFS node. The file will be stored in the IPFS network and a CID (Content Identifier) will be returned.
+   *
+   * @apiParam {File} file File to upload (required, multipart form data)
+   *
+   * @apiExample Example usage:
+   * curl -X POST -F "file=@/path/to/your/file.txt" localhost:5001/ipfs/pin-local-file
+   *
+   * @apiSuccess {String} cid Content Identifier (CID) of the uploaded file
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *     HTTP/1.1 200 OK
+   *     {
+   *       "cid": "bafybeidhiave6yci6gih6ixv5dp63p2qsgfxei4fwg77fov45qezewlpgq",
+   *       "success": true
+   *     }
+   *
+   * @apiError UnprocessableEntity Missing or invalid file parameter
+   * @apiError InternalServerError Error uploading file to IPFS
+   *
+   * @apiErrorExample {json} Error-Response:
+   *     HTTP/1.1 422 Unprocessable Entity
+   *     {
+   *       "status": 422,
+   *       "error": "Unprocessable Entity"
+   *     }
+   */
+  // Upload a file via HTTP and add it to the IPFS node.
+  async pinLocalFile (ctx) {
+    try {
+      // console.log('ctx.request.files: ', ctx.request.files)
+
+      const file = ctx.request.files.file
+      // console.log('file: ', file)
+
+      const result = await this.useCases.ipfs.pinLocalFile({ file })
+
+      ctx.body = result
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/pinLocalFile(): ', err)
       this.handleError(ctx, err)
     }
   }
