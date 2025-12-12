@@ -498,10 +498,10 @@ describe('#ipfs-use-case', () => {
     })
   })
 
-  describe('#downloadCid', () => {
+  describe('#downloadFile', () => {
     it('should throw error if CID is not provided', async () => {
       try {
-        await uut.downloadCid({})
+        await uut.downloadFile({})
 
         assert.fail('Unexpected code path')
       } catch (err) {
@@ -516,7 +516,7 @@ describe('#ipfs-use-case', () => {
         // Mock dependencies and force desired code path
         sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([])
 
-        await uut.downloadCid({ cid })
+        await uut.downloadFile({ cid })
 
         assert.fail('Unexpected code path')
       } catch (err) {
@@ -533,7 +533,7 @@ describe('#ipfs-use-case', () => {
           dataPinned: false
         }])
 
-        await uut.downloadCid({ cid })
+        await uut.downloadFile({ cid })
 
         assert.fail('Unexpected code path')
       } catch (err) {
@@ -551,7 +551,7 @@ describe('#ipfs-use-case', () => {
       }])
       // sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'ls').resolves({})
 
-      const result = await uut.downloadCid({ cid })
+      const result = await uut.downloadFile({ cid })
       // console.log('result: ', result)
 
       assert.property(result, 'filename')
@@ -573,7 +573,7 @@ describe('#ipfs-use-case', () => {
         yield { path: 'dir/file' } // mock folder file
       })
 
-      const result = await uut.downloadCid({ cid, listDir: true })
+      const result = await uut.downloadFile({ cid, listDir: true })
       // console.log('result: ', result)
 
       assert.property(result, 'filename')
@@ -595,7 +595,7 @@ describe('#ipfs-use-case', () => {
         yield { path: 'dir/file' } // mock folder file
       })
 
-      const result = await uut.downloadCid({ cid, name: 'test.txt', listDir: true })
+      const result = await uut.downloadFile({ cid, name: 'test.txt', listDir: true })
       // console.log('result: ', result)
 
       assert.property(result, 'filename')
@@ -958,7 +958,7 @@ describe('#ipfs-use-case', () => {
     //     assert.equal(error.message, 'File exceeds max file size of 100000000')
     //   }
     // })
-    
+
     it('should handle ipfs addFile error', async () => {
       try {
         sandbox.stub(uut.fs, 'createReadStream').returns('content')

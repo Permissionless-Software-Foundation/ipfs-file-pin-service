@@ -80,6 +80,7 @@ class IpfsUseCases {
     this.pinIsBeingTracked = this.pinIsBeingTracked.bind(this)
     this.removePinFromTracker = this.removePinFromTracker.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
+    this.downloadFile = this.downloadFile.bind(this)
     this.downloadCid = this.downloadCid.bind(this)
     this.getPinClaims = this.getPinClaims.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
@@ -826,8 +827,10 @@ class IpfsUseCases {
     }
   }
 
-  // Download a pinned file, given its CID.
-  async downloadCid (inObj = {}) {
+  // Download a pinned file to a client, given its CID.
+  // The 'file' is differentiated from a CID, in that the file has a pin claim
+  // which has been validated, and the file has been downloaded and pinned already.
+  async downloadFile (inObj = {}) {
     try {
       const { cid, name, listDir } = inObj
       if (!cid) throw new Error('CID is undefined')
@@ -929,9 +932,107 @@ class IpfsUseCases {
       const readStream = bufferToStream(fileBuf)
 
       const filename = existingModel.filename
-      console.log('returning stream. downloadCid() done.')
+      console.log('returning stream. downloadFile() done.')
 
       return { filename, readStream }
+    } catch (err) {
+      console.error('Error in use-cases/ipfs.js/dowloadFile()')
+      throw err
+    }
+  }
+
+  // Try to download a random CID.
+  // This is used to try to download any random CID. It is not restricted to
+  // Pin Claims. This can be used to download CIDs from other nodes on the
+  // network that have a file privately pinned.
+  async downloadCid (inObj = {}) {
+    try {
+      const { cid } = inObj
+      if (!cid) throw new Error('CID is undefined')
+
+      const helia = this.adapters.ipfs.ipfs
+
+      console.log('Attemping to download CID: ', cid)
+
+      // list cid content
+      const contentArray = []
+      for await (const file of helia.fs.ls(cid)) {
+        console.log('file: ', file)
+        contentArray.push(file)
+      }
+      // console.log('contentArray', contentArray)
+
+      // If a name is not provided, detect if the provided cid is a directory or a single file.
+      /**
+      *  If the cid is a directory
+       * The next block of code sends a html page with a list of links with the file names into the directory.
+       * Skipping this code delivers directly the first file detected in the directory.
+       */
+      // const isDir = contentArray[0].path.match('/') // TODO : looking for a better way to detect if is a directory
+      // console.log('isDir: ', isDir, contentArray[0])
+      // // 'listDir' is a flag to ignore this code on /download endpoint.
+      // if (isDir && !name && listDir) {
+      //   console.log('This CID is a directory')
+      //   const stream = new Stream.Readable({ read () { } })
+      //   for (let i = 0; i < contentArray.length; i++) {
+      //     const cont = contentArray[i]
+      //     // List all paths excluding root path.
+      //     if (cont.path !== cid) {
+      //       // Add links to the gateway with the format  cid/:filename
+      //       stream.push(`<a href='${this.config.domainName}/ipfs/view/${cid}/${cont.name}' >/${cont.name} ( CID:  ${cont.cid} )</a><hr />`)
+      //     }
+      //   }
+
+      //   stream.push(null)
+      //   // return fileName as html because the controller the library <mime.lookup> sends it as html
+      //   return { filename: contentArray[0].name + '.html', readStream: stream }
+      // } else {
+      //   console.log('This CID is not a directory.')
+      // }
+
+      const fullCid = cid
+      // // if endpoint path does not have a provided name, looking into content array for
+      // // file names.
+      // if (!name) {
+      //   console.log('Looking for filename.')
+      //   for (let i = 0; i < contentArray.length; i++) {
+      //     const cont = contentArray[i]
+      //     // if a content name is different than the provided cid, possibly means the provided cid is a directory
+      //     if (cont.name !== cid) {
+      //       // Choose the first file found into ipfs node.
+      //       fullCid = `${cid}/${cont.name}`
+      //       break
+      //     }
+      //   }
+      // } else {
+      //   console.log(`filename is ${name}`)
+      //   // if the endpoint path its  /cid/:filename
+      //   fullCid = `${cid}/${name}`
+      // }
+
+      console.log('creating buffer')
+      // Convert the file to a Buffer.
+      const fileChunks = []
+      for await (const chunk of helia.fs.cat(fullCid)) {
+        fileChunks.push(chunk)
+      }
+      const fileBuf = Buffer.concat(fileChunks)
+      console.log('buffer created')
+
+      // Convert the Buffer into a readable stream
+      console.log('converting buffer to stream')
+      const bufferToStream = (myBuffer) => {
+        const tmp = new Duplex()
+        tmp.push(myBuffer)
+        tmp.push(null)
+        return tmp
+      }
+      const readStream = bufferToStream(fileBuf)
+
+      // const filename = existingModel.filename
+      console.log('returning stream. downloadCid() done.')
+
+      return { readStream }
     } catch (err) {
       console.error('Error in use-cases/ipfs.js/dowloadCid()')
       throw err

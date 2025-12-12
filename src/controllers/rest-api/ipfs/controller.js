@@ -37,12 +37,13 @@ class IpfsRESTControllerLib {
     this.connect = this.connect.bind(this)
     this.pinClaim = this.pinClaim.bind(this)
     this.pinStatus = this.pinStatus.bind(this)
-    this.downloadCid = this.downloadCid.bind(this)
+    this.downloadFile = this.downloadFile.bind(this)
     this.getThisNode = this.getThisNode.bind(this)
     this.viewFile = this.viewFile.bind(this)
     this.getPins = this.getPins.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
     this.pinLocalFile = this.pinLocalFile.bind(this)
+    this.downloadCid = this.downloadCid.bind(this)
   }
 
   /**
@@ -180,14 +181,32 @@ class IpfsRESTControllerLib {
   // This function will hopefully be phased out by an IPFS Gateway once such
   // functionality has been developed for Helia. At the moment, nothing exists,
   // so I had to create my own way for downloading pinned files of HTTP.
-  async downloadCid (ctx) {
+  async downloadFile (ctx) {
     try {
       const { cid, name } = ctx.params
 
-      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid, name })
+      const { filename, readStream } = await this.useCases.ipfs.downloadFile({ cid, name })
 
       ctx.body = readStream
       ctx.attachment(filename)
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/downloadFile():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Try to download a random CID.
+  // This is used to try to download any random CID. It is not restricted to
+  // Pin Claims. This can be used to download CIDs from other nodes on the
+  // network that have a file privately pinned.
+  async downloadCid (ctx) {
+    try {
+      const { cid } = ctx.params
+
+      const { readStream } = await this.useCases.ipfs.downloadCid({ cid })
+
+      ctx.body = readStream
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/downloadCid():', err)
       // ctx.throw(422, err.message)
@@ -225,7 +244,7 @@ class IpfsRESTControllerLib {
 
       // const cid = ctx.params.cid
 
-      const { filename, readStream } = await this.useCases.ipfs.downloadCid({ cid, name, listDir: true })
+      const { filename, readStream } = await this.useCases.ipfs.downloadFile({ cid, name, listDir: true })
 
       // ctx.body = ctx.req.pipe(readStream)
 

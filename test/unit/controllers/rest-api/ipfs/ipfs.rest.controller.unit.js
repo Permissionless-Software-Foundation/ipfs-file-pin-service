@@ -253,13 +253,13 @@ describe('#IPFS REST API', () => {
     it('should return 422 status on biz logic error', async () => {
       try {
         // Force an error
-        sandbox.stub(uut.useCases.ipfs, 'downloadCid').rejects(new Error('test error'))
+        sandbox.stub(uut.useCases.ipfs, 'downloadFile').rejects(new Error('test error'))
 
         ctx.params = {
           cid: 'fake-cid'
         }
 
-        await uut.downloadCid(ctx)
+        await uut.downloadFile(ctx)
 
         assert.fail('Unexpected result')
       } catch (err) {
@@ -271,13 +271,13 @@ describe('#IPFS REST API', () => {
 
     it('should return 200 status on success', async () => {
       // Mock dependencies
-      sandbox.stub(uut.useCases.ipfs, 'downloadCid').resolves({ filename: 'text.txt', readStream: {} })
+      sandbox.stub(uut.useCases.ipfs, 'downloadFile').resolves({ filename: 'text.txt', readStream: {} })
 
       ctx.params = {
         cid: 'fake-cid'
       }
 
-      await uut.downloadCid(ctx)
+      await uut.downloadFile(ctx)
       // console.log('ctx.body: ', ctx.body)
 
       assert.isObject(ctx.body)
@@ -322,7 +322,7 @@ describe('#IPFS REST API', () => {
     it('should return 422 status on biz logic error', async () => {
       try {
         // Force an error
-        sandbox.stub(uut.useCases.ipfs, 'downloadCid').rejects(new Error('test error'))
+        sandbox.stub(uut.useCases.ipfs, 'downloadFile').rejects(new Error('test error'))
 
         ctx.params = {
           cid: 'fake-cid',
@@ -341,7 +341,7 @@ describe('#IPFS REST API', () => {
 
     it('should return 200 status on success', async () => {
       // Mock dependencies
-      sandbox.stub(uut.useCases.ipfs, 'downloadCid').resolves({ fileName: 'fake-name', readStream: {} })
+      sandbox.stub(uut.useCases.ipfs, 'downloadFile').resolves({ fileName: 'fake-name', readStream: {} })
 
       ctx.params = {
         cid: 'fake-cid'
