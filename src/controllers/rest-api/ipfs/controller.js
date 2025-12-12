@@ -43,6 +43,7 @@ class IpfsRESTControllerLib {
     this.getPins = this.getPins.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
     this.pinLocalFile = this.pinLocalFile.bind(this)
+    this.downloadCid = this.downloadCid.bind(this)
   }
 
   /**
@@ -190,6 +191,24 @@ class IpfsRESTControllerLib {
       ctx.attachment(filename)
     } catch (err) {
       wlogger.error('Error in ipfs/controller.js/downloadFile():', err)
+      // ctx.throw(422, err.message)
+      this.handleError(ctx, err)
+    }
+  }
+
+  // Try to download a random CID.
+  // This is used to try to download any random CID. It is not restricted to
+  // Pin Claims. This can be used to download CIDs from other nodes on the
+  // network that have a file privately pinned.
+  async downloadCid (ctx) {
+    try {
+      const { cid } = ctx.params
+
+      const { readStream } = await this.useCases.ipfs.downloadCid({ cid })
+
+      ctx.body = readStream
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/downloadCid():', err)
       // ctx.throw(422, err.message)
       this.handleError(ctx, err)
     }
