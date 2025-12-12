@@ -44,7 +44,7 @@ class IpfsUseCaseMock {
     return true
   }
 
-  async downloadCid() {
+  async downloadFile() {
     return true
   }
 

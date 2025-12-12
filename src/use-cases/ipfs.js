@@ -80,7 +80,7 @@ class IpfsUseCases {
     this.pinIsBeingTracked = this.pinIsBeingTracked.bind(this)
     this.removePinFromTracker = this.removePinFromTracker.bind(this)
     this.getPinStatus = this.getPinStatus.bind(this)
-    this.downloadCid = this.downloadCid.bind(this)
+    this.downloadFile = this.downloadFile.bind(this)
     this.getPinClaims = this.getPinClaims.bind(this)
     this.getUnprocessedPins = this.getUnprocessedPins.bind(this)
     this.pinLocalFile = this.pinLocalFile.bind(this)
@@ -827,7 +827,7 @@ class IpfsUseCases {
   }
 
   // Download a pinned file, given its CID.
-  async downloadCid (inObj = {}) {
+  async downloadFile (inObj = {}) {
     try {
       const { cid, name, listDir } = inObj
       if (!cid) throw new Error('CID is undefined')
@@ -929,7 +929,7 @@ class IpfsUseCases {
       const readStream = bufferToStream(fileBuf)
 
       const filename = existingModel.filename
-      console.log('returning stream. downloadCid() done.')
+      console.log('returning stream. downloadFile() done.')
 
       return { filename, readStream }
     } catch (err) {
