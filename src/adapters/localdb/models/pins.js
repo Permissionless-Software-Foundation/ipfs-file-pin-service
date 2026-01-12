@@ -21,7 +21,9 @@ const Pin = new mongoose.Schema({
   address: { type: String, default: null },
   recordTime: { type: Number },
   downloadTries: { type: Number, default: 0 },
-  fileSize: { type: Number, default: null } // Size in bytes
+  fileSize: { type: Number, default: null }, // Size in bytes
+  claimTxids: { type: Array, default: [] },
+  pobTxids: { type: Array, default: [] }
 })
 
 export default mongoose.model('pin', Pin)

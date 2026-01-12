@@ -157,12 +157,14 @@ class IpfsUseCases {
 
       // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
+      console.log('processPinClaim() pobTxDetails: ', pobTxDetails)
       pobTxDetails = pobTxDetails[0]
       // console.log('pobTxDetails: ', pobTxDetails)
 
       // Get TX details for the pin claim.
       console.log('processPinClaim() claimTxid: ', claimTxid)
       let claimTxDetails = await this.wallet.getTxData([claimTxid])
+      console.log('processPinClaim() claimTxDetails: ', claimTxDetails)
       claimTxDetails = claimTxDetails[0]
       // console.log('claimTxDetails: ', claimTxDetails)
 
@@ -201,11 +203,15 @@ class IpfsUseCases {
 
       const Pins = this.adapters.localdb.Pins
 
+      // Update dbModel if it exists and  update renewal data if applicable.
+      await this.handleRenewal(inObj, claimTxDetails, pobTxDetails)
+
       // Code below commented out because of the following corner cases:
       // - If CID was previously submitted with too small of PoB, the claim
       //   can be re-submitted with proper PoB.
       // - Same CID is re-submitted to renew the pinning for another year.
       // Check to see CID is not already in database.
+
       let dbModel = await Pins.findOne({ cid })
       if (dbModel) {
         console.log(`A database model for CID ${cid} already exists. Existing state:`)
@@ -241,6 +247,71 @@ class IpfsUseCases {
       }
     } catch (err) {
       console.error('Error in processPinClaim(): ', err)
+      throw err
+    }
+  }
+
+  // This function is used to handle the renewal of a pin claim.
+  // If renewal is needed, then update the database model with the new txids, tx details, and address.
+  async handleRenewal (pinData = {}, claimTxDetails, pobTxDetails) {
+    try {
+      const { cid, address } = pinData
+      if (!cid || typeof cid !== 'string') {
+        throw new Error('cid must be a string')
+      }
+      if (!address || typeof address !== 'string') {
+        throw new Error('address must be a string')
+      }
+
+      const dbModel = await this.adapters.localdb.Pins.findOne({ cid })
+      if (!dbModel) {
+        console.log(`handleRenewal() dbModel not found for cid: ${cid}`)
+        return false
+      }
+
+      console.log('handleRenewal() pinData: ', pinData)
+      const incomingClaimTxid = pinData.claimTxid
+      const incomingProofOfBurnTxid = pinData.proofOfBurnTxid
+      // Get existing txids from database model.
+      const existingClaimTxid = dbModel.claimTxid
+      const existingProofOfBurnTxid = dbModel.proofOfBurnTxid
+      // If the txids are the same, then no renewal needed.
+      if (existingClaimTxid === incomingClaimTxid || existingProofOfBurnTxid === incomingProofOfBurnTxid) {
+        console.log('The claim and proof of burn txids are the same. No renewal needed.')
+        return false
+      }
+
+      if (dbModel.claimTxids && dbModel.claimTxids.includes(incomingClaimTxid)) {
+        console.log('The claim txid is already handled. No renewal needed.')
+        return false
+      }
+
+      if (dbModel.pobTxids && dbModel.pobTxids.includes(incomingProofOfBurnTxid)) {
+        console.log('The proof of burn txid is already handled. No renewal needed.')
+        return false
+      }
+
+      // Update the txids array.
+      dbModel.claimTxids.push(existingClaimTxid)
+      dbModel.pobTxids.push(existingProofOfBurnTxid)
+
+      // Update the txids.
+      dbModel.claimTxid = incomingClaimTxid
+      dbModel.proofOfBurnTxid = incomingProofOfBurnTxid
+
+      // Update the tx details.
+      dbModel.claimTxDetails = claimTxDetails
+      dbModel.pobTxDetails = pobTxDetails
+
+      // Update the address.
+      dbModel.address = address
+
+      const result = await dbModel.save()
+      console.log('handleRenewal() result: ', result)
+
+      return true
+    } catch (err) {
+      console.error('Error in handleRenewal(): ', err)
       throw err
     }
   }
@@ -845,7 +916,7 @@ class IpfsUseCases {
         const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime } = existingModel
         const formattedModel = { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime, cid, filename: existingModel.filename }
         console.log(`db model data: ${JSON.stringify(formattedModel, null, 2)}`)
-      } catch (err) {}
+      } catch (err) { }
 
       if (!existingModel) {
         throw new Error(`Database model for CID ${cid} does not exist.`)
