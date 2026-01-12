@@ -83,7 +83,7 @@ describe('#Timer-Controllers', () => {
     })
     it('should handle pin attemps ', async () => {
       // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7 }])
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7 }, { downloadTries: 2 }])
       sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
       uut.useCases.ipfs.retryQueue = {
         validationQueue: {
@@ -139,6 +139,20 @@ describe('#Timer-Controllers', () => {
 
       assert.isFalse(result)
     })
+  })
+  describe('#clearDownloadTries', () => {
+    it('should clear the download tries', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7, save: async () => { return true } }])
+      const result = await uut.clearDownloadTries()
+
+      assert.equal(result, true)
+    })
+  })
+  it('should return false on error', async () => {
+    sandbox.stub(uut.adapters.localdb.Pins, 'find').throws(new Error('test error'))
+    const result = await uut.clearDownloadTries()
+
+    assert.equal(result, false)
   })
   describe('#autoReboot', () => {
     it('should reboot the system', async () => {

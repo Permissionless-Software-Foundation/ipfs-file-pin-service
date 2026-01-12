@@ -353,6 +353,59 @@ describe('#IPFS REST API', () => {
       assert.isObject(ctx.body)
     })
   })
+  describe('#GET /download-cid/:cid', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        // Force an error
+        sandbox.stub(uut.useCases.ipfs, 'downloadCid').throws(new Error('test error'))
+
+        ctx.params = {
+          cid: 'fake-cid'
+        }
+
+        await uut.downloadCid(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'test error')
+      }
+    })
+    it('should return 200 status on success', async () => {
+      // Mock dependencies
+      sandbox.stub(uut.useCases.ipfs, 'downloadCid').resolves({ readStream: {} })
+
+      ctx.params = {
+        cid: 'fake-cid'
+      }
+
+      await uut.downloadCid(ctx)
+
+      assert.isObject(ctx.body)
+    })
+  })
+  describe('#GET /unprocessed-pins', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        // Force an error
+        sandbox.stub(uut.useCases.ipfs, 'getUnprocessedPins').throws(new Error('test error'))
+
+        await uut.getUnprocessedPins(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'test error')
+      }
+    })
+    it('should return 200 status on success', async () => {
+      // Mock dependencies
+      sandbox.stub(uut.useCases.ipfs, 'getUnprocessedPins').resolves([])
+
+      await uut.getUnprocessedPins(ctx)
+      assert.isArray(ctx.body)
+    })
+  })
   describe('#handleError', () => {
     it('should still throw error if there is no message', () => {
       try {

@@ -58,6 +58,7 @@ describe('#ipfs-use-case', () => {
       assert.exists(uut.wallet)
     })
   })
+
   describe('#getWritePrice', () => {
     it('should get the write price', async () => {
       sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 1, height: 1 }])
@@ -67,6 +68,15 @@ describe('#ipfs-use-case', () => {
       const result = await uut.getWritePrice(inObj)
       assert.isNumber(result)
       assert.equal(result, 1)
+    })
+    it('should get default write price on error', async () => {
+      sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
+      const inObj = {
+        claimTxDetails: { height: null }
+      }
+      const result = await uut.getWritePrice(inObj)
+      assert.isNumber(result)
+      assert.equal(result, 0.03570889)
     })
     it('should handle tx height', async () => {
       sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 5, height: 5 }, { writePrice: 2, height: 2 }])
@@ -696,6 +706,24 @@ describe('#ipfs-use-case', () => {
       assert.equal(result.filename, 'test.txt')
     })
   })
+  describe('#getUnprocessedPins', () => {
+    it('should get unprocessed pins', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ validClaim: null }])
+
+      const result = await uut.getUnprocessedPins()
+      assert.isArray(result)
+    })
+    it('should handle error', async () => {
+      try {
+        sandbox.stub(uut.adapters.localdb.Pins, 'find').throws(new Error('test error'))
+
+        await uut.getUnprocessedPins()
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.include(error.message, 'test error')
+      }
+    })
+  })
 
   describe('#getPinClaims', () => {
     it('should return paginated pin claims', async () => {
@@ -1094,6 +1122,21 @@ describe('#ipfs-use-case', () => {
       } catch (error) {
         assert.equal(error.message, 'ipfs error')
       }
+    })
+  })
+  describe('#downloadCid', () => {
+    it('should throw error if cid is not provided', async () => {
+      try {
+        await uut.downloadCid({})
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.include(error.message, 'CID is undefined')
+      }
+    })
+    it('should download a cid', async () => {
+      const result = await uut.downloadCid({ cid: 'fake-cid' })
+      assert.isObject(result)
+      assert.property(result, 'readStream')
     })
   })
 })
