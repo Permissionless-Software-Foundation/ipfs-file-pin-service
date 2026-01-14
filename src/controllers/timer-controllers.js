@@ -176,6 +176,7 @@ class TimerControllers {
       return true
     } catch (err) {
       console.error('Error in timer-controllers.js/clearDownloadTries(): ', err)
+      return false
     }
   }
 

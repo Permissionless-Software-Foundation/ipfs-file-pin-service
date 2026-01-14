@@ -58,6 +58,7 @@ describe('#ipfs-use-case', () => {
       assert.exists(uut.wallet)
     })
   })
+
   describe('#getWritePrice', () => {
     it('should get the write price', async () => {
       sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 1, height: 1 }])
@@ -67,6 +68,15 @@ describe('#ipfs-use-case', () => {
       const result = await uut.getWritePrice(inObj)
       assert.isNumber(result)
       assert.equal(result, 1)
+    })
+    it('should get default write price on error', async () => {
+      sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
+      const inObj = {
+        claimTxDetails: { height: null }
+      }
+      const result = await uut.getWritePrice(inObj)
+      assert.isNumber(result)
+      assert.equal(result, 0.03570889)
     })
     it('should handle tx height', async () => {
       sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 5, height: 5 }, { writePrice: 2, height: 2 }])
@@ -86,6 +96,7 @@ describe('#ipfs-use-case', () => {
         .onCall(1).resolves([mockData.claimValidTxDetails01])
       sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
       sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+      sandbox.stub(uut, 'handleRenewal').resolves(true)
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -169,6 +180,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ validClaim: true })
       sandbox.stub(uut, 'pinCid').resolves()
       sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+      sandbox.stub(uut, 'handleRenewal').resolves(true)
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -192,6 +204,7 @@ describe('#ipfs-use-case', () => {
       sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ validClaim: true, dataPinned: true })
       sandbox.stub(uut, 'pinCid').resolves()
       sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+      sandbox.stub(uut, 'handleRenewal').resolves(true)
 
       const inObj = {
         proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
@@ -232,6 +245,95 @@ describe('#ipfs-use-case', () => {
     })
   })
 
+  describe('#handleRenewal', () => {
+    it('should throw error if the cid is not a string', async () => {
+      try {
+        const pinData = {
+          cid: 123,
+          address: 'fake-address',
+          claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+          proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+        }
+        await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      } catch (err) {
+        assert.include(err.message, 'cid must be a string')
+      }
+    })
+    it('should throw error if the address is not a string', async () => {
+      try {
+        const pinData = {
+          cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+          address: 123,
+          claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+          proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+        }
+        await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      } catch (err) {
+        assert.include(err.message, 'address must be a string')
+      }
+    })
+    it('should return false if the claim txid is the same as the existing claim txid', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905', save: async () => { } })
+
+      const pinData = {
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        address: 'fake-address',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+      }
+      const result = await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      assert.equal(result, false)
+    })
+    it('should return false if the proof of burn txid is the same as the existing proof of burn txid', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766', save: async () => { } })
+
+      const pinData = {
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        address: 'fake-address',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+      }
+      const result = await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      assert.equal(result, false)
+    })
+    it('should return false if the claim txid is already handled', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ claimTxids: ['09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905'], pobTxids: [], save: async () => { } })
+
+      const pinData = {
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        address: 'fake-address',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+      }
+      const result = await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      assert.equal(result, false)
+    })
+    it('should return false if the proof of burn txid is already handled', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ claimTxids: [], pobTxids: ['5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'], save: async () => { } })
+
+      const pinData = {
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        address: 'fake-address',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+      }
+      const result = await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      assert.equal(result, false)
+    })
+
+    it('should save renewal data', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ claimTxids: [], pobTxids: [], save: async () => { } })
+
+      const pinData = {
+        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+        address: 'fake-address',
+        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766'
+      }
+      const result = await uut.handleRenewal(pinData, mockData.claimValidTxDetails01, mockData.pobValidTxDetails01)
+      assert.equal(result, true)
+    })
+  })
   describe('#_getCid', () => {
     it('should get a file from the IPFS network', async () => {
       sandbox.stub(uut.adapters.ipfs.ipfs.blockstore, 'get').resolves(true)
@@ -602,6 +704,24 @@ describe('#ipfs-use-case', () => {
       assert.property(result, 'readStream')
 
       assert.equal(result.filename, 'test.txt')
+    })
+  })
+  describe('#getUnprocessedPins', () => {
+    it('should get unprocessed pins', async () => {
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ validClaim: null }])
+
+      const result = await uut.getUnprocessedPins()
+      assert.isArray(result)
+    })
+    it('should handle error', async () => {
+      try {
+        sandbox.stub(uut.adapters.localdb.Pins, 'find').throws(new Error('test error'))
+
+        await uut.getUnprocessedPins()
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.include(error.message, 'test error')
+      }
     })
   })
 
@@ -1002,6 +1122,21 @@ describe('#ipfs-use-case', () => {
       } catch (error) {
         assert.equal(error.message, 'ipfs error')
       }
+    })
+  })
+  describe('#downloadCid', () => {
+    it('should throw error if cid is not provided', async () => {
+      try {
+        await uut.downloadCid({})
+        assert.fail('Unexpected code path')
+      } catch (error) {
+        assert.include(error.message, 'CID is undefined')
+      }
+    })
+    it('should download a cid', async () => {
+      const result = await uut.downloadCid({ cid: 'fake-cid' })
+      assert.isObject(result)
+      assert.property(result, 'readStream')
     })
   })
 })

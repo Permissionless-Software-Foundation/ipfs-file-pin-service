@@ -47,6 +47,9 @@ class IpfsUseCaseMock {
   async downloadFile() {
     return true
   }
+  async downloadCid() {
+    return true
+  }
 
   async getPinClaims() {
     return true
@@ -61,6 +64,9 @@ class IpfsUseCaseMock {
   }
   async pinLocalFile() {
     return {}
+  }
+  getUnprocessedPins() {
+    return true
   }
 }
 
