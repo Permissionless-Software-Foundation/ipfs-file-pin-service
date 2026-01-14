@@ -81,6 +81,7 @@ describe('#Timer-Controllers', () => {
 
       assert.equal(result, true)
     })
+
     it('should handle pin attemps ', async () => {
       // Mock dependencies and force desired code path
       sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7 }])
@@ -140,12 +141,30 @@ describe('#Timer-Controllers', () => {
       assert.isFalse(result)
     })
   })
+
   describe('#autoReboot', () => {
     it('should reboot the system', async () => {
       const spy = sandbox.stub(process, 'exit').resolves()
 
       await uut.autoReboot()
       assert.equal(spy.callCount, 1)
+    })
+  })
+
+  describe('#backupUsage', () => {
+    it('should kick off the Use Case', async () => {
+      const result = await uut.backupUsage()
+
+      assert.equal(result, true)
+    })
+
+    it('should return false on error', async () => {
+      sandbox.stub(uut.useCases.usage, 'clearUsage').throws(new Error('test error'))
+      // sandbox.stub(uut.useCases.usage, 'saveUsage').throws(new Error('test error'))
+
+      const result = await uut.backupUsage()
+
+      assert.equal(result, false)
     })
   })
 })
