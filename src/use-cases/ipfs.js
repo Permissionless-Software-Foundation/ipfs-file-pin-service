@@ -43,8 +43,11 @@ class IpfsUseCases {
 
     // Encapsulate dependencies
 
+    // console.log('use-cases/ipfs.js config: ', config)
+
     // Switch between web 2 and web 3 interface.
     if (config.walletInterface === 'web2') {
+      console.log('use-cases/ipfs.js initializing minimal-slp-wallet web2 interface. apiServer: ', config.apiServer)
       this.wallet = new Wallet(undefined, {
         interface: 'rest-api',
         restURL: config.apiServer
@@ -101,11 +104,8 @@ class IpfsUseCases {
       const { claimTxDetails } = inObj
       console.log('getWritePrice() claimTxDetails: ', claimTxDetails)
 
-      // Old code
-      // if (!this.writePrice) {
-      //   this.writePrice = await this.adapters.writePrice.getMcWritePrice()
-      // }
-      // return this.writePrice
+      console.log('getWritePrice() this.wallet.interface: ', this.wallet.ar.interface)
+      console.log('getWritePrice() this.wallet.bchjs.restURL: ', this.wallet.bchjs.restURL)
 
       if (!this.psffpp) {
         this.psffpp = new PSFFPP({ wallet: this.wallet })
@@ -131,6 +131,7 @@ class IpfsUseCases {
       return this.writePrice
     } catch (err) {
       this.writePrice = 0.03570889
+      console.log('getWritePrice() error: ', err)
 
       console.error(`Error in use-cases/ipfs.js/getWritePrice(). Returning hard-coded value of ${this.writePrice}.`)
 

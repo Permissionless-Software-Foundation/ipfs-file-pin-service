@@ -13,8 +13,12 @@ class WritePrice {
   constructor (localConfig = {}) {
     // Encapsulate dependencies
 
+    console.log('adapters/write-price.js config.apiServer: ', config.apiServer)
+    console.log('adapters/write-price.js config.walletInterface: ', config.walletInterface)
+
     // Switch between web 2 and web 3 interface.
     if (config.walletInterface === 'web2') {
+      console.log('adapters/write-price.js initializing minimal-slp-wallet web2 interface. apiServer: ', config.apiServer)
       this.wallet = new SlpWallet(undefined, {
         interface: 'rest-api',
         restURL: config.apiServer
