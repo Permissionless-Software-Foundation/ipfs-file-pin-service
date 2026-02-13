@@ -2,8 +2,6 @@
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-## Overview
-
 ipfs-file-pin-service is part of the **optional** IPFS layer in the [Cash Stack](https://cashstack.info).
 
 ![ipfs-file-pin-service dependency graph](./dev-docs/ipfs-file-pin-service-dependency-graph.png)
