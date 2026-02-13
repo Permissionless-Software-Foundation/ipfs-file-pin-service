@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project runs a [Helia](https://github.com/ipfs/helia) IPFS node and REST API server that provides **paid IPFS file pinning** using the [PSF File Pinning Protocol (PS010)](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md). It is forked from [ipfs-service-provider](https://github.com/Permissionless-Software-Foundation/ipfs-service-provider).
+This project runs a [Helia](https://github.com/ipfs/helia) IPFS node and REST API server that provides **paid IPFS file pinning** using the [PSF File Pinning Protocol (PS010)](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md). This code base was forked from [ipfs-service-provider](https://github.com/Permissionless-Software-Foundation/ipfs-service-provider).
 
 The service is activated by [psf-slp-indexer-g2](https://github.com/Permissionless-Software-Foundation/psf-slp-indexer-g2) via webhook. When a new [Pin Claim](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md) is detected on the blockchain, the service:
 
@@ -41,7 +41,7 @@ The recommended way to run in production is with Docker Compose. The [production
 
 ```bash
 cd production/docker
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts two containers:
@@ -51,9 +51,9 @@ This starts two containers:
 | `mongo-file-service`   | MongoDB 4.2 database             | `5556` -> `27017`                          |
 | `file-service`         | Application server               | `5031` (REST), `4001` (TCP), `4003` (WS), `4005` (WebRTC) |
 
-- Bring containers down: `docker-compose down`
-- Bring containers back up: `docker-compose up -d`
-- View logs: `docker-compose logs -f file-service`
+- Bring containers down: `docker compose down`
+- Bring containers back up: `docker compose up -d`
+- View logs: `docker compose logs -f file-service`
 
 Production environment variables are set in [production/docker/start-production.sh](./production/docker/start-production.sh). Edit this file to configure your deployment before starting containers.
 
