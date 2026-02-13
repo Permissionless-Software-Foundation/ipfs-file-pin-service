@@ -2,11 +2,13 @@
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-## Overview
+ipfs-file-pin-service is part of the **optional** IPFS layer in the [Cash Stack](https://cashstack.info).
+
+![ipfs-file-pin-service dependency graph](./dev-docs/ipfs-file-pin-service-dependency-graph.png)
 
 This project runs a [Helia](https://github.com/ipfs/helia) IPFS node and REST API server that provides **paid IPFS file pinning** using the [PSF File Pinning Protocol (PS010)](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md). This code base was forked from [ipfs-service-provider](https://github.com/Permissionless-Software-Foundation/ipfs-service-provider).
 
-The service is activated by [psf-slp-indexer-g2](https://github.com/Permissionless-Software-Foundation/psf-slp-indexer-g2) via webhook. When a new [Pin Claim](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md) is detected on the blockchain, the service:
+The service is activated by [psf-slp-indexer-g2](https://github.com/Permissionless-Software-Foundation/psf-slp-indexer-g2), via a webhook when it detects a new Pin Claim on the blockchain. It depends on [psf-bch-api](https://github.com/Permissionless-Software-Foundation/psf-bch-api) to interact with the BCH blockchain. When a new [Pin Claim](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md) is detected on the blockchain, the service:
 
 1. Validates that a proper proof-of-burn of PSF tokens was submitted with the claim.
 2. Verifies that the burn amount meets the required cost based on file size.
