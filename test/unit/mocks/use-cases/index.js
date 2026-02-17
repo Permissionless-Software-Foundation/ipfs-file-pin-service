@@ -96,6 +96,12 @@ class UsageUseCaseMock {
   }
 }
 
+class LocalUseCaseMock {
+  async getAll () {
+    return []
+  }
+}
+
 class UseCasesMock {
   constuctor(localConfig = {}) {
     // this.user = new UserUseCaseMock(localConfig)
@@ -104,6 +110,7 @@ class UseCasesMock {
   user = new UserUseCaseMock()
   ipfs = new IpfsUseCaseMock()
   usage = new UsageUseCaseMock()
+  local = new LocalUseCaseMock()
 }
 
 export default UseCasesMock;
