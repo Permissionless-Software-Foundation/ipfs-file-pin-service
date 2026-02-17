@@ -96,6 +96,16 @@ class UsageUseCaseMock {
   }
 }
 
+class LocalUseCaseMock {
+  async getAll () {
+    return []
+  }
+
+  async deleteByCid () {
+    return { CID: 'testCid', filename: 'test.txt', fileSize: 100 }
+  }
+}
+
 class UseCasesMock {
   constuctor(localConfig = {}) {
     // this.user = new UserUseCaseMock(localConfig)
@@ -104,6 +114,7 @@ class UseCasesMock {
   user = new UserUseCaseMock()
   ipfs = new IpfsUseCaseMock()
   usage = new UsageUseCaseMock()
+  local = new LocalUseCaseMock()
 }
 
 export default UseCasesMock;
