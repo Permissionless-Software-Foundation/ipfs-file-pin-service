@@ -27,6 +27,7 @@ class LocalRESTControllerLib {
 
     // Bind 'this' object to all subfunctions
     this.getAll = this.getAll.bind(this)
+    this.deleteByCid = this.deleteByCid.bind(this)
     this.handleError = this.handleError.bind(this)
   }
 
@@ -71,6 +72,47 @@ class LocalRESTControllerLib {
       ctx.body = { localPins }
     } catch (err) {
       wlogger.error('Error in local/controller.js/getAll(): ')
+      this.handleError(ctx, err)
+    }
+  }
+
+  /**
+   * @api {delete} /local/:cid Delete a local pin by CID
+   * @apiPermission public
+   * @apiName DeleteLocalPin
+   * @apiGroup REST Local
+   *
+   * @apiParam {String} cid CID of the pin to delete (URL parameter)
+   *
+   * @apiExample Example usage:
+   * curl -H "Content-Type: application/json" -X DELETE localhost:5020/local/bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenosa7ala
+   *
+   * @apiSuccess {Object} localPin The deleted local pin object
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *     HTTP/1.1 200 OK
+   *     {
+   *       "success": true
+   *     }
+   *
+   * @apiError UnprocessableEntity Missing required parameters
+   *
+   * @apiErrorExample {json} Error-Response:
+   *     HTTP/1.1 422 Unprocessable Entity
+   *     {
+   *       "status": 422,
+   *       "error": "Unprocessable Entity"
+   *     }
+   */
+  async deleteByCid (ctx) {
+    try {
+      const cid = ctx.params.cid
+
+      await this.useCases.local.deleteByCid({ cid })
+
+      ctx.body = { success: true }
+    } catch (err) {
+      wlogger.error('Error in local/controller.js/deleteByCid(): ')
       this.handleError(ctx, err)
     }
   }

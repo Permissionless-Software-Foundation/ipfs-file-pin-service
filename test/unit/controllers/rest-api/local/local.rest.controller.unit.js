@@ -82,6 +82,33 @@ describe('#Local-REST-Controller', () => {
     })
   })
 
+  describe('#Delete /local/:cid', () => {
+    it('should return 422 status on biz logic error', async () => {
+      try {
+        sandbox.stub(uut.useCases.local, 'deleteByCid').throws(new Error('test error'))
+        ctx.params = { cid: 'testCid' }
+        await uut.deleteByCid(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'test error')
+      }
+    })
+
+    it('should return 200 status on success', async () => {
+      ctx.params = { cid: 'testCid' }
+      await uut.deleteByCid(ctx)
+
+      // Assert the expected HTTP response
+      assert.equal(ctx.status, 200)
+
+      // Assert that expected properties exist in the returned data.
+      assert.property(ctx.response.body, 'success')
+      assert.equal(ctx.response.body.success, true)
+    })
+  })
+
   describe('#handleError', () => {
     it('should pass an error message', () => {
       try {

@@ -75,4 +75,93 @@ describe('#local-use-case', () => {
       }
     })
   })
+
+  describe('#deleteByCid', () => {
+    it('should throw an error if cid is not provided', async () => {
+      try {
+        await uut.deleteByCid({})
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, "Property 'cid' must be a string!")
+      }
+    })
+
+    it('should throw an error if cid is not a string', async () => {
+      try {
+        await uut.deleteByCid({ cid: 123 })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, "Property 'cid' must be a string!")
+      }
+    })
+
+    it('should throw an error if no local pin is found', async () => {
+      try {
+        sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(null)
+
+        await uut.deleteByCid({ cid: 'bafyNotFound' })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'No local pin found with CID: bafyNotFound')
+      }
+    })
+
+    it('should unpin and delete a local pin by CID', async () => {
+      const mockPin = {
+        CID: 'bafytest1',
+        filename: 'file1.txt',
+        fileSize: 100,
+        remove: sandbox.stub().resolves(true)
+      }
+
+      sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
+
+      const result = await uut.deleteByCid({ cid: 'bafytest1' })
+
+      assert.equal(result.CID, 'bafytest1')
+      assert.isTrue(mockPin.remove.calledOnce)
+    })
+
+    it('should throw an error if IPFS unpin fails', async () => {
+      try {
+        const mockPin = {
+          CID: 'bafytest1',
+          filename: 'file1.txt',
+          fileSize: 100,
+          remove: sandbox.stub().resolves(true)
+        }
+
+        sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
+        sandbox.stub(adapters.ipfs.ipfs.pins, 'rm').rejects(new Error('unpin failed'))
+
+        await uut.deleteByCid({ cid: 'bafytest1' })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'unpin failed')
+      }
+    })
+
+    it('should throw an error if database delete fails', async () => {
+      try {
+        const mockPin = {
+          CID: 'bafytest1',
+          filename: 'file1.txt',
+          fileSize: 100,
+          remove: sandbox.stub().rejects(new Error('delete failed'))
+        }
+
+        sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
+
+        await uut.deleteByCid({ cid: 'bafytest1' })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, 'delete failed')
+      }
+    })
+  })
 })

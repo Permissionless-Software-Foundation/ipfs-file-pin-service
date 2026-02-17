@@ -100,6 +100,10 @@ class LocalUseCaseMock {
   async getAll () {
     return []
   }
+
+  async deleteByCid () {
+    return { CID: 'testCid', filename: 'test.txt', fileSize: 100 }
+  }
 }
 
 class UseCasesMock {

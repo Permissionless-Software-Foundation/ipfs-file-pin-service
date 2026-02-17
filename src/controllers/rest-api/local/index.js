@@ -45,6 +45,7 @@ class LocalRouter {
 
     // Define the routes and attach the controller.
     this.router.get('/', this.localRESTController.getAll)
+    this.router.delete('/:cid', this.localRESTController.deleteByCid)
 
     // Attach the Controller routes to the Koa app.
     app.use(this.router.routes())
