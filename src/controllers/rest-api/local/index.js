@@ -7,6 +7,7 @@ import Router from 'koa-router'
 
 // Local libraries.
 import LocalRESTControllerLib from './controller.js'
+import Validators from '../middleware/validators.js'
 
 class LocalRouter {
   constructor (localConfig = {}) {
@@ -34,6 +35,10 @@ class LocalRouter {
     // Instantiate the router and set the base route.
     const baseUrl = '/local'
     this.router = new Router({ prefix: baseUrl })
+    this.validators = new Validators()
+
+    this.getAll = this.getAll.bind(this)
+    this.deleteByCid = this.deleteByCid.bind(this)
   }
 
   attach (app) {
@@ -44,12 +49,22 @@ class LocalRouter {
     }
 
     // Define the routes and attach the controller.
-    this.router.get('/', this.localRESTController.getAll)
-    this.router.delete('/:cid', this.localRESTController.deleteByCid)
+    this.router.get('/', this.getAll)
+    this.router.delete('/:cid', this.deleteByCid)
 
     // Attach the Controller routes to the Koa app.
     app.use(this.router.routes())
     app.use(this.router.allowedMethods())
+  }
+
+  async getAll (ctx, next) {
+    await this.validators.ensureUser(ctx, next)
+    await this.localRESTController.getAll(ctx)
+  }
+
+  async deleteByCid (ctx, next) {
+    await this.validators.ensureUser(ctx, next)
+    await this.localRESTController.deleteByCid(ctx)
   }
 }
 
