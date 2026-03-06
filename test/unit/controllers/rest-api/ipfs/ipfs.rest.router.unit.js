@@ -75,4 +75,13 @@ describe('#IPFS-REST-Router', () => {
       }
     })
   })
+  describe('#pinLocalFile', () => {
+    it('should route to controller', async () => {
+      sandbox.stub(uut.validators, 'ensureUser').resolves(true)
+      const spy = sandbox.stub(uut.ipfsRESTController, 'pinLocalFile').resolves(true)
+
+      await uut.pinLocalFile()
+      assert.isTrue(spy.calledOnce)
+    })
+  })
 })
