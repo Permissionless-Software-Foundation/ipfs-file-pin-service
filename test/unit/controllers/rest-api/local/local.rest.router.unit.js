@@ -69,4 +69,22 @@ describe('#Local-REST-Router', () => {
       }
     })
   })
+  describe('#getAll', () => {
+    it('should route to controller', async () => {
+      sandbox.stub(uut.validators, 'ensureUser').resolves(true)
+      const spy = sandbox.stub(uut.localRESTController, 'getAll').resolves(true)
+
+      await uut.getAll()
+      assert.isTrue(spy.calledOnce)
+    })
+  })
+  describe('#deleteByCid', () => {
+    it('should route to controller', async () => {
+      sandbox.stub(uut.validators, 'ensureUser').resolves(true)
+      const spy = sandbox.stub(uut.localRESTController, 'deleteByCid').resolves(true)
+
+      await uut.deleteByCid()
+      assert.isTrue(spy.calledOnce)
+    })
+  })
 })
