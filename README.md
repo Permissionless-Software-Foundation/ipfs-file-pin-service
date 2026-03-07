@@ -229,7 +229,29 @@ npm run docs
 
 Then visit `http://localhost:5020/` to view the generated docs.
 
+<<<<<<< HEAD
 There is additional developer documentation in the [dev-docs](./dev-docs) directory.
+=======
+## Dependencies
+
+- [koa2](https://github.com/koajs/koa/tree/v2.x)
+- [koa-router](https://github.com/alexmingoia/koa-router)
+- [koa-bodyparser](https://github.com/koajs/bodyparser)
+- [koa-generic-session](https://github.com/koajs/generic-session)
+- [koa-logger](https://github.com/koajs/logger)
+- [MongoDB](http://mongodb.org/)
+- [Mongoose](http://mongoosejs.com/)
+- [Passport](http://passportjs.org/)
+- [Nodemon](http://nodemon.io/)
+- [Mocha](https://mochajs.org/)
+- [apidoc](http://apidocjs.com/)
+- [ESLint](http://eslint.org/)
+- [helia-coord](https://www.npmjs.com/package/helia-coord)
+
+## IPFS
+
+Snapshots pinned to IPFS will be listed here.
+>>>>>>> upstream/master
 
 ## License
 
