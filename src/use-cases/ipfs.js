@@ -384,9 +384,12 @@ class IpfsUseCases {
       tracker.completed = true
 
       if (isValid) {
-        // Pin the file
         try {
+          // Pin the file
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
+
+          // Make the file available to the DHT for improved file sharing.
+          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
         } catch (err) {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
@@ -537,11 +540,13 @@ class IpfsUseCases {
        *  Maybe this validation should be removed?
        */
       if (dataPinned) {
-        // Pin the file
         try {
-          // console.log(`Pinning ${cid}...`)
+          // Pin the file
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
-          // console.log(`...finished pinning ${cid}\n`)
+
+
+          // Make the file available to the DHT for improved file sharing.
+          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
         } catch (err) {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
@@ -577,9 +582,12 @@ class IpfsUseCases {
       // tracker.completed = true
 
       if (isValid) {
-        // Pin the file
         try {
+          // Pin the file
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
+
+          // Make the file available to the DHT for improved file sharing.
+          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
         } catch (err) {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
@@ -908,14 +916,28 @@ class IpfsUseCases {
       if (!cid) throw new Error('CID is undefined')
 
       const Pins = this.adapters.localdb.Pins
-      let existingModel = await Pins.find({ cid })
-      existingModel = existingModel[0]
+      const LocalPins = this.adapters.localdb.LocalPins
+
+      let existingModel = await Pins.findOne({ cid })
+      let dbSource = 'Pins'
+
+      // Fall back to local pin metadata when no Pin Claim model exists.
+      if (!existingModel) {
+        existingModel = await LocalPins.findOne({ CID: cid })
+        dbSource = 'LocalPins'
+      }
       // console.log('existingModel: ', existingModel)
 
       // Display summary debug data on the model.
       try {
-        const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime } = existingModel
-        const formattedModel = { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime, cid, filename: existingModel.filename }
+        let formattedModel
+        if (dbSource === 'Pins') {
+          const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime } = existingModel
+          formattedModel = { dbSource, validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime, cid, filename: existingModel.filename }
+        } else {
+          const { fileSize, datePinned } = existingModel
+          formattedModel = { dbSource, dataPinned: true, fileSize, datePinned, cid, filename: existingModel.filename }
+        }
         console.log(`db model data: ${JSON.stringify(formattedModel, null, 2)}`)
       } catch (err) { }
 
@@ -923,7 +945,8 @@ class IpfsUseCases {
         throw new Error(`Database model for CID ${cid} does not exist.`)
       }
 
-      if (!existingModel.dataPinned) {
+      // Only Pin Claim records track dataPinned. Local pins are saved after pinning.
+      if (dbSource === 'Pins' && !existingModel.dataPinned) {
         throw new Error('File has not been pinned. Not available.')
       }
 
@@ -1231,6 +1254,10 @@ class IpfsUseCases {
       try {
         // Pin the CID to the IPFS node.
         for await (const chunk of this.adapters.ipfs.ipfs.pins.add(fileData)) { console.log('ipfs add chunk: ', chunk) }
+
+        // Add the file to the DHT for improved file sharing.
+        await this.adapters.ipfs.ipfs.routing.provide(fileData)
+
         // Validate the data and create a new LocalPins entity.
         const localPinsEntity = this.localPinsEntity.validate({
           CID: cid,
