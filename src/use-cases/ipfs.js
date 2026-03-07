@@ -544,7 +544,6 @@ class IpfsUseCases {
           // Pin the file
           await this.adapters.ipfs.ipfs.pins.add(cidClass)
 
-
           // Make the file available to the DHT for improved file sharing.
           await this.adapters.ipfs.ipfs.routing.provide(cidClass)
         } catch (err) {
