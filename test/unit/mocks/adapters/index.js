@@ -24,6 +24,9 @@ class IpfsAdapter {
         },
         rm: async () => { }
       },
+      routing: {
+        provide: async () => {}
+      },
       fs: {
         addFile: async () => { return 'cid' },
         stat: async () => { },

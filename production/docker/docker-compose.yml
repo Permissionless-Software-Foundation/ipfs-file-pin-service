@@ -1,7 +1,5 @@
 # Start the service with the command 'docker-compose up -d'
 
-version: '3.9'
-
 services:
   mongo-file-service:
     image: mongo:4.2.0
