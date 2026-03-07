@@ -616,7 +616,8 @@ describe('#ipfs-use-case', () => {
         const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
         // Mock dependencies and force desired code path
-        sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([])
+        sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves(undefined)
+        sandbox.stub(uut.adapters.localdb.LocalPins, 'findOne').resolves(undefined)
 
         await uut.downloadFile({ cid })
 
@@ -631,9 +632,9 @@ describe('#ipfs-use-case', () => {
         const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
         // Mock dependencies and force desired code path
-        sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+        sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({
           dataPinned: false
-        }])
+        })
 
         await uut.downloadFile({ cid })
 
@@ -647,10 +648,10 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({
         dataPinned: true,
         filename: 'test.txt'
-      }])
+      })
       // sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'ls').resolves({})
 
       const result = await uut.downloadFile({ cid })
@@ -665,10 +666,10 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({
         dataPinned: true,
         filename: 'test.txt'
-      }])
+      })
 
       sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'ls').callsFake(async function * () {
         yield { path: 'dir/file' } // mock folder file
@@ -687,10 +688,10 @@ describe('#ipfs-use-case', () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
       // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({
         dataPinned: true,
         filename: 'test.txt'
-      }])
+      })
 
       sandbox.stub(uut.adapters.ipfs.ipfs.fs, 'ls').callsFake(async function * () {
         yield { path: 'dir/file' } // mock folder file
