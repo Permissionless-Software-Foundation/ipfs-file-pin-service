@@ -157,6 +157,7 @@ class IpfsUseCases {
       await this.wallet.bchjs.Util.sleep(3000)
 
       // Get TX details for the proof-of-burn TX.
+      console.log(`Processing PoB TX: ${proofOfBurnTxid}`)
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
       console.log('processPinClaim() pobTxDetails: ', pobTxDetails)
       pobTxDetails = pobTxDetails[0]
