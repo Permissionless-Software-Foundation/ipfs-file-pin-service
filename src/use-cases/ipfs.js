@@ -157,7 +157,7 @@ class IpfsUseCases {
       await this.wallet.bchjs.Util.sleep(3000)
 
       console.log(`Processing PoB TX: ${proofOfBurnTxid}`)
-      if(!proofOfBurnTxid) {
+      if (!proofOfBurnTxid) {
         throw new Error('proofOfBurnTxid must be a TXID string. Received: ', proofOfBurnTxid)
       }
 
