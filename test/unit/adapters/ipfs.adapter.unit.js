@@ -86,6 +86,31 @@ describe('#IPFS-adapter', () => {
     })
   })
 
+  describe('#connectToStartupPeers', () => {
+    const peer1 = '/ip4/161.35.99.207/tcp/4001/p2p/12D3KooWDtj9cfj1SKuLbDNKvKRKSsGN8qivq9M8CYpLPDpcD5pu'
+    const peer2 = '/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWFQ11GQ5NubsJGhYZ4X3wrAGimLevxfm6HPExCrMYhpSL'
+
+    it('should dial each configured peer', async () => {
+      const dial = sandbox.stub().resolves()
+      const ipfs = { libp2p: { dial } }
+
+      await uut.connectToStartupPeers(ipfs, [peer1, peer2])
+
+      assert.equal(dial.callCount, 2)
+    })
+
+    it('should continue dialing when a peer connection fails', async () => {
+      const dial = sandbox.stub()
+      dial.onFirstCall().rejects(new Error('connection refused'))
+      dial.onSecondCall().resolves()
+      const ipfs = { libp2p: { dial } }
+
+      await uut.connectToStartupPeers(ipfs, [peer1, peer2])
+
+      assert.equal(dial.callCount, 2)
+    })
+  })
+
   describe('#stop', () => {
     it('should stop the IPFS node', async () => {
       // Mock dependencies

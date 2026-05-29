@@ -6,6 +6,8 @@
   - CONNECT_PREF: should have a value of 'cr' (default), or 'direct'. This is
     used by helia-coord to select a connection preference between peers. Servers
     with an ip4 or ip6 address should use 'direct'.
+  - STARTUP_PEERS: comma-separated list of IPFS multiaddrs to dial after Helia
+    startup (e.g. /ip4/x.x.x.x/tcp/4001/p2p/12D3Koo...).
 */
 
 /* eslint  no-unneeded-ternary:0 */
@@ -24,6 +26,11 @@ const version = pkgInfo.version
 const ipfsCoordName = process.env.COORD_NAME
   ? process.env.COORD_NAME
   : 'ipfs-bch-wallet-service'
+
+function parseMultiaddrs (envValue) {
+  if (!envValue) return []
+  return envValue.split(',').map(s => s.trim()).filter(Boolean)
+}
 
 export default {
   // Configure TCP port.
@@ -143,14 +150,8 @@ export default {
 
   chatPubSubChan: 'psf-ipfs-chat-001',
 
-  // This can add specific Circuit Relay v2 servers to connect to.
-  bootstrapRelays: [
-    // v2 Circuit Relay (Token Tiger)
-    // '/ip4/137.184.93.145/tcp/8001/p2p/12D3KooWGMEKkdJfyZbwdH9EafZbRTtMn7FnhWPrE4MhRty2763g',
-
-    // v2 Circuit Relay server (FullStack.cash)
-    // '/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWFQ11GQ5NubsJGhYZ4X3wrAGimLevxfm6HPExCrMYhpSL'
-  ],
+  // IPFS peers to dial immediately after Helia startup.
+  startupPeers: parseMultiaddrs(process.env.STARTUP_PEERS),
 
   useWebRtc: process.env.USE_WEB_RTC ? process.env.USE_WEB_RTC : false,
 

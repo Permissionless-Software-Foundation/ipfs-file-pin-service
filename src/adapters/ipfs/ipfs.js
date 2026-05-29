@@ -9,6 +9,7 @@
 
 // Global npm libraries
 import CreateHeliaNode from 'helia-coord/create-helia-node'
+import { multiaddr } from '@multiformats/multiaddr'
 
 // Local libraries
 import config from '../../../config/index.js'
@@ -34,6 +35,7 @@ class IpfsAdapter {
     this.start = this.start.bind(this)
     this.stop = this.stop.bind(this)
     this.getSeed = this.getSeed.bind(this)
+    this.connectToStartupPeers = this.connectToStartupPeers.bind(this)
   }
 
   // Start an IPFS node.
@@ -57,6 +59,10 @@ class IpfsAdapter {
       console.log('IPFS ID: ', this.id)
       console.log('Multiaddrs: ', this.multiaddrs)
 
+      if (this.config.startupPeers.length) {
+        await this.connectToStartupPeers(ipfs, this.config.startupPeers)
+      }
+
       // Signal that this adapter is ready.
       this.isReady = true
 
@@ -73,6 +79,18 @@ class IpfsAdapter {
     await this.ipfs.stop()
 
     return true
+  }
+
+  // Dial configured peers after Helia startup. Failures are logged but non-fatal.
+  async connectToStartupPeers (ipfs, peers) {
+    for (const addr of peers) {
+      try {
+        await ipfs.libp2p.dial(multiaddr(addr))
+        console.log(`Connected to startup peer: ${addr}`)
+      } catch (err) {
+        console.warn(`Failed to connect to startup peer ${addr}: ${err.message}`)
+      }
+    }
   }
 
   // This function opens the seed used to generate the key for this IPFS peer.
