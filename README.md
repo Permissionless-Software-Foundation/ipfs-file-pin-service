@@ -102,6 +102,17 @@ The application is configured through environment variables. All configuration i
 | `IPFS_HOST`            | External IPFS host (production)                                 | `localhost`              |
 | `IPFS_API_PORT`        | External IPFS API port (production)                             | `5001`                   |
 | `WEB2_API`             | Public REST API URL announced to IPFS peers                     | *unset*                  |
+| `STARTUP_PEERS`        | Comma-separated IPFS multiaddrs to dial after Helia startup     | *unset* (none)           |
+
+After the Helia node starts, the service dials each address in `STARTUP_PEERS`. Use this to connect to specific peers on your private network (for example, other pin service nodes or indexers). A failed dial is logged as a warning and does not prevent the server from starting.
+
+```bash
+export STARTUP_PEERS="/ip4/78.46.129.7/tcp/4001/p2p/12D3KooWEBzgK8a5TpMfLotuj7jJnEK41gbD9LZK6qCpxNrX43E9,/ip4/5.78.70.29/tcp/4001/p2p/12D3KooWSREJ6x2DJSYrA1xRD2Qs6D4DHncsHmNnTHuMKHnqpG2i"
+```
+
+Each value must be a full multiaddr including the `/p2p/<peer-id>` component. This is separate from the default PSF bootstrap peers configured inside helia-coord; `STARTUP_PEERS` adds explicit connections on top of normal network discovery.
+
+You can also connect to peers at runtime via `POST /ipfs/connect`.
 
 ### Wallet
 
@@ -229,29 +240,7 @@ npm run docs
 
 Then visit `http://localhost:5020/` to view the generated docs.
 
-<<<<<<< HEAD
 There is additional developer documentation in the [dev-docs](./dev-docs) directory.
-=======
-## Dependencies
-
-- [koa2](https://github.com/koajs/koa/tree/v2.x)
-- [koa-router](https://github.com/alexmingoia/koa-router)
-- [koa-bodyparser](https://github.com/koajs/bodyparser)
-- [koa-generic-session](https://github.com/koajs/generic-session)
-- [koa-logger](https://github.com/koajs/logger)
-- [MongoDB](http://mongodb.org/)
-- [Mongoose](http://mongoosejs.com/)
-- [Passport](http://passportjs.org/)
-- [Nodemon](http://nodemon.io/)
-- [Mocha](https://mochajs.org/)
-- [apidoc](http://apidocjs.com/)
-- [ESLint](http://eslint.org/)
-- [helia-coord](https://www.npmjs.com/package/helia-coord)
-
-## IPFS
-
-Snapshots pinned to IPFS will be listed here.
->>>>>>> upstream/master
 
 ## License
 
