@@ -156,8 +156,12 @@ class IpfsUseCases {
       console.log('Waiting 3 seconds to let TXs get processed...')
       await this.wallet.bchjs.Util.sleep(3000)
 
-      // Get TX details for the proof-of-burn TX.
       console.log(`Processing PoB TX: ${proofOfBurnTxid}`)
+      if(!proofOfBurnTxid) {
+        throw new Error('proofOfBurnTxid must be a TXID string. Received: ', proofOfBurnTxid)
+      }
+
+      // Get TX details for the proof-of-burn TX.
       let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
       console.log('processPinClaim() pobTxDetails: ', pobTxDetails)
       pobTxDetails = pobTxDetails[0]
