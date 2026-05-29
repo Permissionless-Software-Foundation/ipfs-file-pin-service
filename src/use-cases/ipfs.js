@@ -158,7 +158,7 @@ class IpfsUseCases {
 
       console.log(`Processing PoB TX: ${proofOfBurnTxid}`)
       if (!proofOfBurnTxid) {
-        throw new Error('proofOfBurnTxid must be a TXID string. Received: ', proofOfBurnTxid)
+        throw new Error(`proofOfBurnTxid must be a TXID string. Received: ${proofOfBurnTxid.toString()}`)
       }
 
       // Get TX details for the proof-of-burn TX.
