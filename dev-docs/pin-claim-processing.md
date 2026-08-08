@@ -3,7 +3,7 @@
 Below is a high-level description of how a new Pin Claim is processed.
 
 Primary implementation: `src/use-cases/ipfs.js` (`processPinClaim`, `pinCid`, `pinCidForTimerController`, `_tryToGetCid`).  
-Periodic retries: `src/controllers/timer-controllers.js` (`pinCids`).
+Periodic retries: `src/controllers/timer-controllers.js` (`pinCids`). See [periodic-pin-retry.md](./periodic-pin-retry.md) for a dedicated overview of the retry loop.
 
 Entry points:
 - REST: `POST /ipfs/pin-claim`
@@ -55,29 +55,32 @@ Entry points:
   - 98% tolerance threshold (`minCost = mbCost * 0.98`)
 - **IPFS Pinning**: If validation passes, pins the file to the local IPFS node and announces it via `routing.provide()` (DHT)
 - **Database Update**: Updates the database record with final status (`dataPinned: true`, `validClaim: true`, `fileSize`)
+- **Download failures**: Timeouts, throws, and missing size call `_recordDownloadFailure` (bumps `downloadTries`, sets `nextRetryAt` backoff) and clear the pin tracker so the timer path can retry later
 
 ### 5b. **Periodic Retry Processing** (Timer Controller → `pinCidForTimerController` → `_tryToGetCid`)
-- Starts ~4 minutes after server boot, then runs about every 10 minutes
-- Loads Pin Claims from the database, sorts by `downloadTries` ascending, and processes up to 30 pins with `downloadTries < 5`
-- Fire-and-forget download/validate/pin path, separate from the submit-time `pinCid()` path
-- On failed download: increments `downloadTries` and leaves the claim for a later round
+
+See [periodic-pin-retry.md](./periodic-pin-retry.md) for a full explanation. Summary:
+
+- Starts ~4 minutes after server boot, then runs about every `pinRetryIntervalMs` (default 10 minutes)
+- Selects **unpinned** candidates only (`dataPinned: false`), due for retry (`nextRetryAt <= now`), under `pinRetryMaxTries`
+- Sorts by fewest `downloadTries`, then newest `recordTime`; respects download-slot backpressure and skips in-flight CIDs
+- Soft-quarantine budget occasionally revives exhausted CIDs after a cooldown (no global `downloadTries` reset)
+- On failed download (including timeout/throw): increments `downloadTries`, sets `lastDownloadAttempt` and exponential `nextRetryAt`
 - On success: pins, DHT-provides, and sets `dataPinned: true`, `validClaim: true`
-- Periodically (about every 5.5 hours) resets all `downloadTries` to allow another retry cycle
 
 ### 6. **Error Handling & Cleanup**
-- **Failed Downloads (timer path)**: Increments `downloadTries` for later retry
-- **Failed Downloads (submit-time `pinCid`)**: Returns false; does not increment `downloadTries` (timer path handles retries)
+- **Failed Downloads**: Both submit-time and timer paths record failures via `_recordDownloadFailure` so impossible CIDs age out of the hot path
 - **Invalid Claims**: If size/payment validation fails, removes the database record to prevent retry loops
 - **Already Pinned**: Handles cases where the file is already pinned on the IPFS node
-- **Auto-reboot**: Timer Controllers reboot the process every ~6 hours (Helia memory / network recovery)
+- **In-flight Dedup**: Pin tracker prevents the same CID from being downloaded multiple times concurrently
 
 ### Key Features:
 - **Asynchronous Processing**: Submit returns immediately while pinning continues in the background
 - **Dual Paths**: Immediate `pinCid()` on submit, plus Timer Controller retries via `_tryToGetCid`
-- **Retry Mechanism**: Retry queue for downloads; `downloadTries` + periodic reset for persistent failures
+- **Fair Retries**: Unpinned-only selection, exponential backoff, quarantine budget instead of blanket try resets
 - **Economic Validation**: Payment checked against historical write price for the claim's block height (98% tolerance)
 - **Renewals**: Same CID can be re-submitted with new PoB/claim TXs; prior TXIDs stored in `claimTxids` / `pobTxids`
-- **Duplicate Prevention**: In-memory pin tracker (submit path) plus DB state (`validClaim` / `dataPinned`)
-- **State Management**: Pin tracker (memory), Pin model fields in MongoDB (`downloadTries`, `fileSize`, renewal TXID arrays)
+- **Duplicate Prevention**: In-memory pin tracker plus DB state (`validClaim` / `dataPinned` / `nextRetryAt`)
+- **State Management**: Pin tracker (memory), Pin model fields (`downloadTries`, `lastDownloadAttempt`, `nextRetryAt`, `fileSize`, renewal TXID arrays)
 
 This workflow validates pin claims economically and technically before files are permanently pinned, returns immediate feedback on submit, and continues background retries until download and validation succeed or the claim is rejected.

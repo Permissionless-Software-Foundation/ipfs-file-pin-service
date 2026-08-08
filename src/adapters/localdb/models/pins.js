@@ -21,6 +21,8 @@ const Pin = new mongoose.Schema({
   address: { type: String, default: null },
   recordTime: { type: Number },
   downloadTries: { type: Number, default: 0 },
+  lastDownloadAttempt: { type: Number, default: null }, // ms epoch of last download attempt
+  nextRetryAt: { type: Number, default: 0 }, // ms epoch; 0 = immediately eligible
   fileSize: { type: Number, default: null }, // Size in bytes
   claimTxids: { type: Array, default: [] },
   pobTxids: { type: Array, default: [] }

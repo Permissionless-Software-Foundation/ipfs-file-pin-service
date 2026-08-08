@@ -32,6 +32,15 @@ class UserUseCaseMock {
 }
 
 class IpfsUseCaseMock {
+  constructor () {
+    this.pinTrackerCnt = 0
+    this.retryQueue = {
+      validationQueue: {
+        size: 0
+      }
+    }
+  }
+
   async processPinClaim () {
     return true
   }
@@ -57,6 +66,10 @@ class IpfsUseCaseMock {
 
   async pinCidForTimerController() {
     return true
+  }
+
+  pinIsBeingTracked () {
+    return false
   }
 
   async getWritePrice() {
