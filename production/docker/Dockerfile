@@ -40,7 +40,7 @@ WORKDIR /home/safeuser
 #RUN npm install -g npm
 
 # npm mirror to prevent direct dependency on npm.
-RUN npm set registry http://94.130.170.209:4873/
+#RUN npm set registry http://94.130.170.209:4873/
 
 # Switch to user account.
 #USER safeuser
