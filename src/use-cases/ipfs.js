@@ -61,10 +61,13 @@ class IpfsUseCases {
     this.fs = fs
     this.bchjs = this.wallet.bchjs
     this.retryQueue = new RetryQueue({
-      concurrency: 20,
+      concurrency: config.pinRetryDownloadConcurrency || 10,
+      // Note: RetryQueue ignores attempts: 0 (falsy); forced to 0 below.
       attempts: 0,
       timeout: 60000 * 5 // Note: Timeout feature does not work is v1.0.10
     })
+    // Force p-retry off — timer-level retries already handle persistence.
+    this.retryQueue.attempts = 0
     this.pinEntity = new PinEntity()
     this.localPinsEntity = new LocalPinsEntity()
     this.CID = CID
@@ -75,6 +78,7 @@ class IpfsUseCases {
     this.pinCid = this.pinCid.bind(this)
     this.pinCidForTimerController = this.pinCidForTimerController.bind(this)
     this._tryToGetCid = this._tryToGetCid.bind(this)
+    this._recordDownloadFailure = this._recordDownloadFailure.bind(this)
     this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
     this._getCid = this._getCid.bind(this)
     this._getCidWithTimeout = this._getCidWithTimeout.bind(this)
@@ -324,7 +328,7 @@ class IpfsUseCases {
 
   // Given a pin claim model from the database, this function tries to pin
   // the CID with the IPFS node attached to this app.
-  // This function is called by the pinCids() in the Timer Controller.
+  // This function is called by processPinClaim() on submit (fire-and-forget).
   async pinCid (pinData = {}) {
     try {
       // console.log('pinData: ', pinData)
@@ -332,41 +336,34 @@ class IpfsUseCases {
       const { cid, tokensBurned, filename, claimTxDetails } = pinData
       // console.log('pinCid() claimTxDetails: ', claimTxDetails)
 
-      // console.log(`Attempting to pinning CID: ${cid}`)
-
-      // Get the file so that we have it locally.
-      // console.log(`Getting file ${cid}`)
-
       const cidClass = this.CID.parse(cid)
-      // console.log('cidClass: ', cidClass)
-
-      // console.log(`Starting download of ${cid} at ${now.toISOString()}`)
-
-      // let fileSize = null
 
       // If the pin is already being tracked, then skip.
       // Dev Note: This code block needs to be above the download code, so that
       // multiple downloads do not stack up.
-      let tracker
       if (this.pinIsBeingTracked(cid)) {
         console.log('This pin is already being tracked. Skipping.')
         return true
-      } else {
-        tracker = this.trackPin(cid)
       }
+      this.trackPin(cid)
 
       let now = new Date()
       console.log(`Validating pin claim for ${filename} with CID ${pinData.cid} at ${now.toLocaleString()}`)
 
-      // Download the file and return the size of the file.
-      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
+      let fileSize
+      try {
+        // Download the file and return the size of the file.
+        fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
+      } catch (err) {
+        console.log(`Download of ${filename} (${cid}) failed: ${err.message}`)
+        await this._recordDownloadFailure(pinData)
+        return false
+      }
 
       // If fileSize = undefined then download was unsuccessful.
       if (!fileSize && fileSize !== 0) {
-        console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
-        // delete this.pinTracker[cid]
-        // this.pinTrackerCnt--
-
+        console.log(`Download of ${filename} (${cid}) failed. Recording failure for retry.`)
+        await this._recordDownloadFailure(pinData)
         return false
       }
 
@@ -384,9 +381,7 @@ class IpfsUseCases {
       const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
       console.log('pinCid() isValid: ', isValid)
 
-      this.pinTrackerCnt--
-      tracker.isValid = isValid
-      tracker.completed = true
+      this.removePinFromTracker(cid)
 
       if (isValid) {
         try {
@@ -433,64 +428,66 @@ class IpfsUseCases {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
         }
 
-        pinData.dataPinned = false
-        pinData.validClaim = false
-        await pinData.save()
-
         return false
       }
-
-      // This is used by Timer Controller to report the number of outstanding
-      // files to download.
-      // this.promiseQueueSize = this.retryQueue.validationQueue.size
-      // console.log(`Download requested for ${queueSize} files.`)
 
       return true
     } catch (err) {
       console.error('Error in pinCid(): ', err)
+      try {
+        if (pinData.cid) this.removePinFromTracker(pinData.cid)
+      } catch (trackerErr) { /* ignore */ }
       throw err
     }
   }
 
   async pinCidForTimerController (pinData = {}) {
     try {
-      // console.log('pinData: ', pinData)
-
-      // const { cid } = pinData
-
-      // console.log(`Attempting to pinning CID: ${cid}`)
-
-      // Get the file so that we have it locally.
-      // console.log(`Getting file ${cid}`)
-
-      // const cidClass = this.CID.parse(cid)
-      // console.log('cidClass: ', cidClass)
-
-      // console.log(`Starting download of ${cid} at ${now.toISOString()}`)
-
-      // let fileSize = null
-
       // If the pin is already being tracked, then skip.
-      // if (this.pinIsBeingTracked(cid)) {
-      //   // console.log('This pin is already being tracked. Skipping.')
-      //   return true
-      // }
+      if (this.pinIsBeingTracked(pinData.cid)) {
+        console.log(`CID ${pinData.cid} is already being tracked. Skipping timer enqueue.`)
+        return true
+      }
 
-      // const now = new Date()
-      // console.log(`Pinning ${filename} with CID ${cid} at ${now.toLocaleString()}`)
-
-      // Returns a promise, be do not await. Fire-and-forget.
-      // this.retryQueue.addToQueue(this._tryToGetCid, { pinData })
+      // Returns a promise, but do not await. Fire-and-forget.
       this._tryToGetCid({ pinData })
-
-      // This is used by Timer Controller to report the number of outstanding
-      // files to download.
-      // this.promiseQueueSize = this.retryQueue.validationQueue.size
-      // console.log(`Download requested for ${queueSize} files.`)
 
       return true
     } catch (err) {
       console.error('Error in pinCidForTimerController(): ', err)
+      throw err
+    }
+  }
+
+  // Record a failed download attempt: bump downloadTries, set lastDownloadAttempt
+  // and nextRetryAt with exponential backoff so impossible CIDs age out of the hot path.
+  async _recordDownloadFailure (pinData = {}) {
+    try {
+      const nowMs = Date.now()
+      const tries = (pinData.downloadTries || 0) + 1
+      const backoffBase = this.config.pinRetryBackoffBaseMs || (60000 * 10)
+
+      pinData.downloadTries = tries
+      pinData.lastDownloadAttempt = nowMs
+      // nextRetryAt = now + base * 2^(tries-1)  — first failure waits base, then doubles
+      pinData.nextRetryAt = nowMs + backoffBase * Math.pow(2, tries - 1)
+
+      console.log(`Recorded download failure for CID ${pinData.cid}: tries=${tries}, nextRetryAt=${new Date(pinData.nextRetryAt).toISOString()}`)
+
+      if (typeof pinData.save === 'function') {
+        await pinData.save()
+      }
+
+      if (pinData.cid) {
+        this.removePinFromTracker(pinData.cid)
+      }
+
+      return pinData
+    } catch (err) {
+      console.error('Error in _recordDownloadFailure(): ', err)
+      try {
+        if (pinData.cid) this.removePinFromTracker(pinData.cid)
+      } catch (trackerErr) { /* ignore */ }
       throw err
     }
   }
@@ -500,90 +497,48 @@ class IpfsUseCases {
   // checks.
   // This is designed to be a fire-and-forget call by the Timer Controller.
   async _tryToGetCid (inObj = {}) {
-    try {
-      const { pinData } = inObj
-      const { cid, tokensBurned, filename, dataPinned, validClaim, claimTxDetails } = pinData
-      const cidClass = this.CID.parse(cid)
-      // console.log('_tryToGetCid() claimTxDetails: ', claimTxDetails)
+    const { pinData } = inObj
+    const { cid, tokensBurned, filename, dataPinned, claimTxDetails } = pinData
 
+    try {
       // Exit if the file is already pinned.
       if (dataPinned) return true
 
-      console.log(`Processing CID ${cid}. validClaim: ${validClaim}, dataPinned: ${dataPinned}`)
+      // Skip if already in-flight (e.g. submit-time pinCid still running).
+      if (this.pinIsBeingTracked(cid)) {
+        console.log(`CID ${cid} is already being tracked. Skipping _tryToGetCid.`)
+        return true
+      }
+      this.trackPin(cid)
 
-      // Add the CID to the tracker, so that we don't try to download or pin
-      // the same file twice.
-      // const tracker = this.trackPin(cid)
+      console.log(`Processing CID ${cid}. dataPinned: ${dataPinned}, downloadTries: ${pinData.downloadTries}`)
 
-      const fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
-      // const fileSize = await this._getCid({ cid: cidClass })
-      console.log(`File size for ${cid}: `, fileSize)
+      const cidClass = this.CID.parse(cid)
 
-      // If fileSize = undefined then download was unsuccessful.
-      if (!fileSize) {
-        // console.log(`Download of ${filename} (${cid}) failed. Removing from tracker for retry.`)
-        // this.removePinFromTracker(cid)
-        // Dev Note: File could not be downloaded, so do not remove from tracker.
-
-        // If the download failed, increment the database model's downloadTries.
-        let tries = pinData.downloadTries
-        tries++
-        pinData.downloadTries = tries
-        await pinData.save()
-
+      let fileSize
+      try {
+        fileSize = await this.retryQueue.addToQueue(this._getCidWithTimeout, { cid: cidClass })
+      } catch (err) {
+        console.log(`Download of ${filename} (${cid}) threw: ${err.message}`)
+        await this._recordDownloadFailure(pinData)
         return false
       }
 
-      // Dev Note: This call to pin content must come AFTER the CID is downloaded,
-      // otherwise the Promise returned from pin.add() will never resolve.
-      //
-      // If the model in the database says the file is already pinned and
-      // validated, then ensure the file is actually pinned and exit.
-      /**
-       *  DEV NOTE (05/02/25):
-       *  This validation is already handled at the start of this function
-       *  Maybe this validation should be removed?
-       */
-      if (dataPinned) {
-        try {
-          // Pin the file
-          await this.adapters.ipfs.ipfs.pins.add(cidClass)
+      console.log(`File size for ${cid}: `, fileSize)
 
-          // Make the file available to the DHT for improved file sharing.
-          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
-        } catch (err) {
-          if (err.message.includes('Already pinned')) {
-            console.log(`CID ${cid} already pinned.`)
-          } else {
-            throw err
-          }
-        }
-
-        // Remove the CID from the pin tracker.
-        // this.removePinFromTracker(cid)
-        return true
+      // If fileSize = undefined then download was unsuccessful.
+      if (!fileSize && fileSize !== 0) {
+        await this._recordDownloadFailure(pinData)
+        return false
       }
 
-      // const file = await this.adapters.ipfs.ipfs.blockstore.get(cidClass)
-      // console.log('pinCid() file: ', file)
-      // fileSize = file.length
       console.log(`CID ${cid} with filename ${filename} is ${fileSize} bytes big.`)
 
       const now = new Date()
       console.log(`Finished download of ${filename}, ${cid} at ${now.toISOString()}`)
 
-      // TODO: Replace this with a validation function.
-      // const isValid = true
-      // let isValid = false
-      // if (fileSize < this.config.maxPinSize) {
-      //   isValid = true
-      // }
-      // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
       const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
       console.log('_tryToGetCid() isValid: ', isValid)
-
-      // tracker.isValid = isValid
-      // tracker.completed = true
 
       if (isValid) {
         try {
@@ -596,34 +551,29 @@ class IpfsUseCases {
           if (err.message.includes('Already pinned')) {
             console.log(`CID ${cid} already pinned.`)
           } else {
+            this.removePinFromTracker(cid)
             throw err
           }
         }
 
-        // this.removePinFromTracker(cid)
+        this.removePinFromTracker(cid)
 
         this.pinSuccess++
         console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.\n`)
 
         pinData.dataPinned = true
         pinData.validClaim = true
+        pinData.fileSize = parseInt(fileSize)
         await pinData.save()
         return true
       } else {
-        // If the file does meet the size requirements, then unpin it.
-        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes. Unpinning file.`)
+        // If the file does not meet size/payment requirements, delete the DB model
+        // so the timer does not keep retrying it.
+        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper PoB. Removing DB model.`)
 
-        // 9/13/24 CT: Trying to delete the file causes the IPFS node to freeze.
-        // For now I'll try deleting the DB model to prevent the timer controller
-        // from continually trying to download and validate the file.
-
-        // Delete the file from the blockstore
-        // await this.adapters.ipfs.ipfs.blockstore.delete(cidClass)
-        // console.log(`Deleted CID ${cid}`)
+        this.removePinFromTracker(cid)
 
         try {
-          // Remove pin from database, so that it does not keep getting downloaded
-          // and pinning retried.
           const Pins = this.adapters.localdb.Pins
           const existingModel = await Pins.findOne({ cid })
           console.log('existingModel: ', existingModel)
@@ -633,21 +583,24 @@ class IpfsUseCases {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
         }
 
-        // Dev Note: Do not remove the CID from the pin tracker here, as we do not
-        // want to try and re-download this big file.
-
-        // pinData.dataPinned = false
-        // pinData.validClaim = false
-        // await pinData.save()
-
         return false
       }
     } catch (err) {
       console.error('Error in _tryToGetCid(): ', err)
-
       console.log('_tryToGetCid() inObj: ', inObj)
 
-      throw err
+      // Unexpected errors: still count as a download failure so the CID ages out.
+      try {
+        if (pinData && !pinData.dataPinned) {
+          await this._recordDownloadFailure(pinData)
+        } else if (pinData && pinData.cid) {
+          this.removePinFromTracker(pinData.cid)
+        }
+      } catch (recordErr) {
+        console.error('Error recording failure after _tryToGetCid error: ', recordErr)
+      }
+
+      return false
     }
   }
 
@@ -885,9 +838,10 @@ class IpfsUseCases {
 
   // Remove a pin from the tracker.
   removePinFromTracker (cid) {
-    // TODO : verify that the cid is in the tracker
-    delete this.pinTracker[cid]
-    this.pinTrackerCnt-- // TODO : pin tracker count maybe can be handle with  the pin tracker object keys length
+    if (this.pinTracker[cid]) {
+      delete this.pinTracker[cid]
+      this.pinTrackerCnt = Math.max(0, this.pinTrackerCnt - 1)
+    }
 
     return true
   }

@@ -11,6 +11,15 @@ import TimerControllers from '../../../src/controllers/timer-controllers.js'
 import adapters from '../mocks/adapters/index.js'
 import UseCasesMock from '../mocks/use-cases/index.js'
 
+// Helper: mongoose-style chainable find().sort().limit() that resolves to docs.
+function chainableFind (docs) {
+  const query = {
+    sort () { return this },
+    limit () { return Promise.resolve(docs) }
+  }
+  return query
+}
+
 describe('#Timer-Controllers', () => {
   let uut
   let sandbox
@@ -57,47 +66,107 @@ describe('#Timer-Controllers', () => {
   })
 
   describe('#startTimers', () => {
-    it('should start the timers', () => {
+    it('should start the timers without clearDownloadTries or autoReboot', () => {
       const result = uut.startTimers()
 
-      uut.stopTimers()
-
       assert.equal(result, true)
+      assert.equal(typeof uut.clearDownloadTries, 'undefined')
+      assert.equal(typeof uut.autoReboot, 'undefined')
+      assert.equal(typeof uut.rebootHandle, 'undefined')
+
+      uut.stopTimers()
     })
   })
 
   describe('#pinCids', () => {
-    it('should retrieve pin models from the database and try to pin them', async () => {
-      // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
-      sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+    it('should retrieve unpinned pin models and try to pin them', async () => {
+      const hotPathPin = { cid: 'cid-hot', downloadTries: 0, dataPinned: false }
+
+      sandbox.stub(uut.adapters.localdb.Pins, 'find')
+        .onFirstCall().returns(chainableFind([hotPathPin]))
+        .onSecondCall().returns(chainableFind([]))
+
+      const pinSpy = sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
       uut.useCases.ipfs.retryQueue = {
-        validationQueue: {
-          size: 1
-        }
+        validationQueue: { size: 0 }
       }
+      uut.useCases.ipfs.pinTrackerCnt = 0
+      sandbox.stub(uut.useCases.ipfs, 'pinIsBeingTracked').returns(false)
 
       const result = await uut.pinCids()
 
       assert.equal(result, true)
+      assert.equal(pinSpy.callCount, 1)
+      assert.equal(pinSpy.firstCall.args[0].cid, 'cid-hot')
     })
 
-    it('should handle pin attemps ', async () => {
-      // Mock dependencies and force desired code path
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7 }, { downloadTries: 2 }])
-      sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+    it('should skip in-flight CIDs', async () => {
+      const hotPathPin = { cid: 'cid-inflight', downloadTries: 0, dataPinned: false }
+
+      sandbox.stub(uut.adapters.localdb.Pins, 'find')
+        .onFirstCall().returns(chainableFind([hotPathPin]))
+        .onSecondCall().returns(chainableFind([]))
+
+      const pinSpy = sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
       uut.useCases.ipfs.retryQueue = {
-        validationQueue: {
-          size: 1
-        }
+        validationQueue: { size: 0 }
       }
+      uut.useCases.ipfs.pinTrackerCnt = 0
+      sandbox.stub(uut.useCases.ipfs, 'pinIsBeingTracked').returns(true)
 
       const result = await uut.pinCids()
 
       assert.equal(result, true)
+      assert.equal(pinSpy.callCount, 0)
+    })
+
+    it('should include quarantine pins when hot-path leaves slots', async () => {
+      const quarantinePin = {
+        cid: 'cid-quarantine',
+        downloadTries: 7,
+        dataPinned: false,
+        lastDownloadAttempt: Date.now() - (60000 * 60 * 7)
+      }
+
+      sandbox.stub(uut.adapters.localdb.Pins, 'find')
+        .onFirstCall().returns(chainableFind([]))
+        .onSecondCall().returns(chainableFind([quarantinePin]))
+
+      const pinSpy = sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: { size: 0 }
+      }
+      uut.useCases.ipfs.pinTrackerCnt = 0
+      sandbox.stub(uut.useCases.ipfs, 'pinIsBeingTracked').returns(false)
+
+      const result = await uut.pinCids()
+
+      assert.equal(result, true)
+      assert.equal(pinSpy.callCount, 1)
+      assert.equal(pinSpy.firstCall.args[0].cid, 'cid-quarantine')
+    })
+
+    it('should skip enqueue when no download slots are available', async () => {
+      const pinSpy = sandbox.stub(uut.useCases.ipfs, 'pinCidForTimerController').resolves()
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: { size: 100 }
+      }
+      uut.useCases.ipfs.pinTrackerCnt = 0
+      const findSpy = sandbox.stub(uut.adapters.localdb.Pins, 'find')
+
+      const result = await uut.pinCids()
+
+      assert.equal(result, true)
+      assert.equal(pinSpy.callCount, 0)
+      assert.equal(findSpy.callCount, 0)
     })
 
     it('should return false on error', async () => {
+      uut.useCases.ipfs.retryQueue = {
+        validationQueue: { size: 0 }
+      }
+      sandbox.stub(uut.adapters.localdb.Pins, 'find').throws(new Error('test error'))
+
       const result = await uut.pinCids()
 
       assert.equal(result, false)
@@ -139,30 +208,6 @@ describe('#Timer-Controllers', () => {
       const result = await uut.reportQueueSize()
 
       assert.isFalse(result)
-    })
-  })
-
-  describe('#clearDownloadTries', () => {
-    it('should clear the download tries', async () => {
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([{ downloadTries: 7, save: async () => { return true } }])
-      const result = await uut.clearDownloadTries()
-
-      assert.equal(result, true)
-    })
-  })
-  it('should return false on error', async () => {
-    sandbox.stub(uut.adapters.localdb.Pins, 'find').throws(new Error('test error'))
-    const result = await uut.clearDownloadTries()
-
-    assert.equal(result, false)
-  })
-
-  describe('#autoReboot', () => {
-    it('should reboot the system', async () => {
-      const spy = sandbox.stub(process, 'exit').resolves()
-
-      await uut.autoReboot()
-      assert.equal(spy.callCount, 1)
     })
   })
 

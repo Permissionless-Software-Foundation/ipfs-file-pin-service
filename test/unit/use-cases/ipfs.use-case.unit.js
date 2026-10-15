@@ -465,18 +465,23 @@ describe('#ipfs-use-case', () => {
       assert.equal(result, true)
     })
 
-    it('should catch and throw errors', async () => {
-      try {
-        // Mock dependencies and force desired code path
-        sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
+    it('should return false and record failure when download queue throws', async () => {
+      // Mock dependencies and force desired code path
+      sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
 
-        const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
-        await uut.pinCid({ cid })
-
-        assert.fail('Unexpected result')
-      } catch (err) {
-        assert.include(err.message, 'test error')
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+      const pin = {
+        cid,
+        downloadTries: 0,
+        save: async () => { }
       }
+
+      const result = await uut.pinCid(pin)
+
+      assert.equal(result, false)
+      assert.equal(pin.downloadTries, 1)
+      assert.isNumber(pin.nextRetryAt)
+      assert.isFalse(uut.pinIsBeingTracked(cid))
     })
 
     it('should return true if file is already being tracked and pinned', async () => {
@@ -796,6 +801,15 @@ describe('#ipfs-use-case', () => {
       const result = await uut.pinCidForTimerController({ cid: 'fake-cid' })
       assert.equal(result, true)
     })
+    it('should skip if cid is already being tracked', async () => {
+      sandbox.stub(uut, 'pinIsBeingTracked').returns(true)
+      const spy = sandbox.stub(uut, '_tryToGetCid').resolves()
+
+      const result = await uut.pinCidForTimerController({ cid: 'fake-cid' })
+
+      assert.equal(result, true)
+      assert.equal(spy.callCount, 0)
+    })
     it('should catch error', async () => {
       try {
         sandbox.stub(uut, '_tryToGetCid').throws(new Error('test error'))
@@ -816,7 +830,7 @@ describe('#ipfs-use-case', () => {
       const result = await uut._tryToGetCid({ pinData: mockPinModel })
       assert.equal(result, true)
     })
-    it('should store downloadTries and return false if data is fileSize cannot be retrieved', async () => {
+    it('should store downloadTries and nextRetryAt if fileSize cannot be retrieved', async () => {
       //  Stub functions
       sandbox.stub(uut, '_getCidWithTimeout').resolves(undefined)
 
@@ -830,6 +844,36 @@ describe('#ipfs-use-case', () => {
       const result = await uut._tryToGetCid({ pinData: mockPinModel })
       assert.equal(result, false)
       assert.equal(mockPinModel.downloadTries, 1)
+      assert.isNumber(mockPinModel.nextRetryAt)
+      assert.isNumber(mockPinModel.lastDownloadAttempt)
+      assert.isFalse(uut.pinIsBeingTracked(mockPinModel.cid))
+    })
+    it('should store downloadTries when download times out or throws', async () => {
+      sandbox.stub(uut, '_getCidWithTimeout').rejects(new Error('Operation timed out after 300000 ms'))
+
+      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
+      mockPinModel.dataPinned = false
+      mockPinModel.downloadTries = 0
+      mockPinModel.save = async () => { }
+
+      const result = await uut._tryToGetCid({ pinData: mockPinModel })
+
+      assert.equal(result, false)
+      assert.equal(mockPinModel.downloadTries, 1)
+      assert.isNumber(mockPinModel.nextRetryAt)
+      assert.isFalse(uut.pinIsBeingTracked(mockPinModel.cid))
+    })
+    it('should skip if cid is already being tracked', async () => {
+      sandbox.stub(uut, 'pinIsBeingTracked').returns(true)
+      const spy = sandbox.stub(uut, '_getCidWithTimeout')
+
+      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
+      mockPinModel.dataPinned = false
+
+      const result = await uut._tryToGetCid({ pinData: mockPinModel })
+
+      assert.equal(result, true)
+      assert.equal(spy.callCount, 0)
     })
     it('should return true if data is pinned', async () => {
       // Mock data
@@ -855,6 +899,7 @@ describe('#ipfs-use-case', () => {
       const result = await uut._tryToGetCid({ pinData: mockPinModel })
       assert.equal(result, true)
       assert.equal(mockPinModel.dataPinned, true)
+      assert.isFalse(uut.pinIsBeingTracked(mockPinModel.cid))
     })
     it('should handle ipfs add "already pinned" error', async () => {
       // Stub functions
@@ -872,24 +917,24 @@ describe('#ipfs-use-case', () => {
       assert.equal(result, true)
       assert.equal(mockPinModel.dataPinned, true)
     })
-    it('should handle ipfs add error', async () => {
-      try {
-        // Stub functions
-        sandbox.stub(uut, '_getCidWithTimeout').resolves(1000)
-        sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
-        sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').throws(new Error('unknown error'))
+    it('should record failure and return false on ipfs add error', async () => {
+      // Stub functions
+      sandbox.stub(uut, '_getCidWithTimeout').resolves(1000)
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').throws(new Error('unknown error'))
 
-        // Mock data
-        const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-        mockPinModel.dataPinned = false
+      // Mock data
+      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
+      mockPinModel.dataPinned = false
+      mockPinModel.downloadTries = 0
+      mockPinModel.save = async () => { }
 
-        // Call function
-        await uut._tryToGetCid({ pinData: mockPinModel })
+      // Call function
+      const result = await uut._tryToGetCid({ pinData: mockPinModel })
 
-        assert.fail('Unexpected code path')
-      } catch (error) {
-        assert.include(error.message, 'unknown error')
-      }
+      assert.equal(result, false)
+      assert.equal(mockPinModel.downloadTries, 1)
+      assert.isFalse(uut.pinIsBeingTracked(mockPinModel.cid))
     })
     it('should remove pindata if is not a valid claim', async () => {
       // Mock function
@@ -938,6 +983,23 @@ describe('#ipfs-use-case', () => {
       // Call function
       const result = await uut._tryToGetCid({ pinData: mockPinModel })
       assert.equal(result, false)
+    })
+  })
+  describe('#_recordDownloadFailure', () => {
+    it('should increment downloadTries and set backoff fields', async () => {
+      const pinData = {
+        cid: 'fake-cid',
+        downloadTries: 1,
+        save: async () => { }
+      }
+      uut.trackPin(pinData.cid)
+
+      const result = await uut._recordDownloadFailure(pinData)
+
+      assert.equal(result.downloadTries, 2)
+      assert.isNumber(result.lastDownloadAttempt)
+      assert.isTrue(result.nextRetryAt > Date.now())
+      assert.isFalse(uut.pinIsBeingTracked(pinData.cid))
     })
   })
   describe('#validateSizeAndPayment', () => {

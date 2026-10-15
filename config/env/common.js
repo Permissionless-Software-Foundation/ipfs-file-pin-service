@@ -170,6 +170,29 @@ export default {
   // domainName: 'https://pin.fullstack.cash'
   domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031',
 
+  // Periodic pin retry tunables (Timer Controller + download queue)
+  pinRetryBatchSize: process.env.PIN_RETRY_BATCH_SIZE
+    ? parseInt(process.env.PIN_RETRY_BATCH_SIZE)
+    : 30,
+  pinRetryMaxTries: process.env.PIN_RETRY_MAX_TRIES
+    ? parseInt(process.env.PIN_RETRY_MAX_TRIES)
+    : 5,
+  pinRetryIntervalMs: process.env.PIN_RETRY_INTERVAL_MS
+    ? parseInt(process.env.PIN_RETRY_INTERVAL_MS)
+    : 60000 * 10, // 10 minutes
+  pinRetryDownloadConcurrency: process.env.PIN_RETRY_DOWNLOAD_CONCURRENCY
+    ? parseInt(process.env.PIN_RETRY_DOWNLOAD_CONCURRENCY)
+    : 10,
+  pinRetryBackoffBaseMs: process.env.PIN_RETRY_BACKOFF_BASE_MS
+    ? parseInt(process.env.PIN_RETRY_BACKOFF_BASE_MS)
+    : 60000 * 10, // 10 minutes; nextRetryAt = now + base * 2^tries
+  pinRetryQuarantineBudget: process.env.PIN_RETRY_QUARANTINE_BUDGET
+    ? parseInt(process.env.PIN_RETRY_QUARANTINE_BUDGET)
+    : 2,
+  pinRetryQuarantineCooldownMs: process.env.PIN_RETRY_QUARANTINE_COOLDOWN_MS
+    ? parseInt(process.env.PIN_RETRY_QUARANTINE_COOLDOWN_MS)
+    : 60000 * 60 * 6, // 6 hours
+
   // END FILE PIN CONFIGURATION
 
   // END IPFS CONFIGURATION
