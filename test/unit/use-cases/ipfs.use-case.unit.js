@@ -500,6 +500,37 @@ describe('#ipfs-use-case', () => {
       assert.equal(result, true)
     })
 
+    it('should record the pin when routing.provide() aborts', async () => {
+      const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
+
+      uut.config.maxPinSize = 100
+      sandbox.stub(uut, '_getCidWithTimeout').resolves(1000)
+      sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').callsFake(async function * () {
+        yield cid
+      })
+      sandbox.stub(uut.adapters.ipfs.ipfs.routing, 'provide').rejects(
+        Object.assign(new Error('The operation was aborted'), { code: 'ABORT_ERR', type: 'aborted' })
+      )
+
+      let saveCount = 0
+      const pin = {
+        cid,
+        tokensBurned: 1,
+        filename: 'test.png',
+        claimTxDetails: {},
+        save: async () => { saveCount++ }
+      }
+
+      const result = await uut.pinCid(pin)
+
+      assert.equal(result, true)
+      assert.equal(saveCount, 1)
+      assert.isTrue(pin.dataPinned)
+      assert.isTrue(pin.validClaim)
+      assert.equal(pin.fileSize, 1000)
+    })
+
     it('should return true if file is already pinned', async () => {
       const cid = 'bafybeidmxb6au63p6t7wxglks3t6rxgt6t26f3gx26ezamenznkjdnwqta'
 
@@ -888,7 +919,7 @@ describe('#ipfs-use-case', () => {
       // Stub functions
       sandbox.stub(uut, '_getCidWithTimeout').resolves(1000)
       sandbox.stub(uut, 'validateSizeAndPayment').resolves(true)
-      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').resolves()
+      sandbox.stub(uut.adapters.ipfs.ipfs.pins, 'add').callsFake(async function * () {})
 
       // Mock data
       const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
@@ -1000,6 +1031,25 @@ describe('#ipfs-use-case', () => {
       assert.isNumber(result.lastDownloadAttempt)
       assert.isTrue(result.nextRetryAt > Date.now())
       assert.isFalse(uut.pinIsBeingTracked(pinData.cid))
+    })
+
+    it('should persist the 35th failure without throwing', async () => {
+      let saveCount = 0
+      const pinData = {
+        cid: 'bafybeicorjdgar5wzmig35jdmypr6oowestaunu5gsnwdricf42j526r4u',
+        downloadTries: 34,
+        save: async () => { saveCount++ }
+      }
+
+      const before = Date.now()
+      const result = await uut._recordDownloadFailure(pinData)
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+
+      assert.equal(saveCount, 1)
+      assert.equal(result.downloadTries, 35)
+      assert.isTrue(Number.isFinite(new Date(result.nextRetryAt).getTime()))
+      assert.isAbove(result.nextRetryAt, before)
+      assert.isAtMost(result.nextRetryAt - before, thirtyDaysMs)
     })
   })
   describe('#validateSizeAndPayment', () => {

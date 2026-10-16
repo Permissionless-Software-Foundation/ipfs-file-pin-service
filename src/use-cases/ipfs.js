@@ -77,6 +77,8 @@ class IpfsUseCases {
     this.processPinClaim = this.processPinClaim.bind(this)
     this.pinCid = this.pinCid.bind(this)
     this.pinCidForTimerController = this.pinCidForTimerController.bind(this)
+    this._pinOnNode = this._pinOnNode.bind(this)
+    this._provideCid = this._provideCid.bind(this)
     this._tryToGetCid = this._tryToGetCid.bind(this)
     this._recordDownloadFailure = this._recordDownloadFailure.bind(this)
     this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
@@ -384,19 +386,7 @@ class IpfsUseCases {
       this.removePinFromTracker(cid)
 
       if (isValid) {
-        try {
-          // Pin the file
-          await this.adapters.ipfs.ipfs.pins.add(cidClass)
-
-          // Make the file available to the DHT for improved file sharing.
-          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
-        } catch (err) {
-          if (err.message.includes('Already pinned')) {
-            console.log(`CID ${cid} already pinned.`)
-          } else {
-            throw err
-          }
-        }
+        await this._pinOnNode(cid, cidClass)
 
         this.pinSuccess++
         console.log(`Pinned file ${cid}. ${this.pinSuccess} files successfully pinned.`)
@@ -405,6 +395,9 @@ class IpfsUseCases {
         pinData.validClaim = true
         pinData.fileSize = parseInt(fileSize)
         await pinData.save()
+
+        // DHT announce is an optimization. A failure here must not undo the record.
+        await this._provideCid(cid, cidClass)
       } else {
         // If the file does meet the size requirements, then unpin it.
         console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper PoB. Unpinning file.`)
@@ -459,6 +452,35 @@ class IpfsUseCases {
     }
   }
 
+  // Write the Helia pin by fully consuming pins.add(). Awaiting the call only
+  // returns the async generator and does not persist the pin.
+  async _pinOnNode (cid, cidClass) {
+    try {
+      for await (const chunk of this.adapters.ipfs.ipfs.pins.add(cidClass)) {
+        // Helia writes the pin record when this generator is fully consumed.
+        if (chunk == null) continue
+      }
+    } catch (err) {
+      const message = err && err.message ? err.message : ''
+      if (message.includes('Already pinned')) {
+        console.log(`CID ${cid} already pinned.`)
+        return
+      }
+      throw err
+    }
+  }
+
+  // Announce the CID on the DHT. Failure is logged and ignored so it cannot
+  // prevent the pin from being recorded.
+  async _provideCid (cid, cidClass) {
+    try {
+      await this.adapters.ipfs.ipfs.routing.provide(cidClass)
+    } catch (err) {
+      const message = err && err.message ? err.message : err
+      console.warn(`Could not provide CID ${cid} to the DHT: ${message}`)
+    }
+  }
+
   // Record a failed download attempt: bump downloadTries, set lastDownloadAttempt
   // and nextRetryAt with exponential backoff so impossible CIDs age out of the hot path.
   async _recordDownloadFailure (pinData = {}) {
@@ -469,14 +491,23 @@ class IpfsUseCases {
 
       pinData.downloadTries = tries
       pinData.lastDownloadAttempt = nowMs
-      // nextRetryAt = now + base * 2^(tries-1)  — first failure waits base, then doubles
-      pinData.nextRetryAt = nowMs + backoffBase * Math.pow(2, tries - 1)
-
-      console.log(`Recorded download failure for CID ${pinData.cid}: tries=${tries}, nextRetryAt=${new Date(pinData.nextRetryAt).toISOString()}`)
+      // Cap the exponent and the delay so nextRetryAt stays inside the Date range.
+      // Uncapped 600000 * 2^(tries-1) overflows at try 35 and toISOString() throws
+      // before save(), which freezes downloadTries at 34.
+      const maxBackoffMs = 30 * 24 * 60 * 60 * 1000
+      const exponent = Math.min(Math.max(tries - 1, 0), 20)
+      const backoffMs = Math.min(backoffBase * Math.pow(2, exponent), maxBackoffMs)
+      pinData.nextRetryAt = nowMs + backoffMs
 
       if (typeof pinData.save === 'function') {
         await pinData.save()
       }
+
+      const nextRetryDate = new Date(pinData.nextRetryAt)
+      const nextRetryLabel = Number.isFinite(nextRetryDate.getTime())
+        ? nextRetryDate.toISOString()
+        : String(pinData.nextRetryAt)
+      console.log(`Recorded download failure for CID ${pinData.cid}: tries=${tries}, nextRetryAt=${nextRetryLabel}`)
 
       if (pinData.cid) {
         this.removePinFromTracker(pinData.cid)
@@ -541,20 +572,7 @@ class IpfsUseCases {
       console.log('_tryToGetCid() isValid: ', isValid)
 
       if (isValid) {
-        try {
-          // Pin the file
-          await this.adapters.ipfs.ipfs.pins.add(cidClass)
-
-          // Make the file available to the DHT for improved file sharing.
-          await this.adapters.ipfs.ipfs.routing.provide(cidClass)
-        } catch (err) {
-          if (err.message.includes('Already pinned')) {
-            console.log(`CID ${cid} already pinned.`)
-          } else {
-            this.removePinFromTracker(cid)
-            throw err
-          }
-        }
+        await this._pinOnNode(cid, cidClass)
 
         this.removePinFromTracker(cid)
 
@@ -565,6 +583,9 @@ class IpfsUseCases {
         pinData.validClaim = true
         pinData.fileSize = parseInt(fileSize)
         await pinData.save()
+
+        // DHT announce is an optimization. A failure here must not undo the record.
+        await this._provideCid(cid, cidClass)
         return true
       } else {
         // If the file does not meet size/payment requirements, delete the DB model

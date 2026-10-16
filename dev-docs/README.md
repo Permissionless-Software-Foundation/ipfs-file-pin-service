@@ -6,3 +6,4 @@ This directory provides additional documentation for developers who run or fork 
 
 - [pin-claim-processing.md](./pin-claim-processing.md) — How a new Pin Claim is validated, stored, and pinned
 - [periodic-pin-retry.md](./periodic-pin-retry.md) — Why the background pin retry loop exists and how it selects and retries downloads
+- [known-issues.md](./known-issues.md) — Field-verified defects in pin recording and retry accounting, with evidence, reproduction, and fixes
