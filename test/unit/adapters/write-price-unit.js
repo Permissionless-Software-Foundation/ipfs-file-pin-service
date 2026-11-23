@@ -163,20 +163,24 @@ describe('#write-price', () => {
       assert.equal(result, 0.08335233)
     })
 
-    it('should return safety price if no approval tx can be found', async () => {
-      // Mock dependencies and force desired code path.
+    it('should return the (removed) safety price if no approval tx can be found', async () => {
+      // PS010 v2.0.0 removed the hard-coded PSF fallback price, so this
+      // deprecated adapter no longer has a default rate. It is dead code
+      // pending deletion in M5.
       sandbox.stub(uut.ps009, 'getApprovalTx').resolves(null)
+      uut.currentRate = undefined
       const result = await uut.getMcWritePrice()
       // console.log('result: ', result)
-      assert.equal(result, 0.03570889)
+      assert.equal(result, undefined)
     })
 
-    it('should throw error and return safety price if wallet is not initialized', async () => {
-      // Mock dependencies and force desired code path.
+    it('should throw error and return the (removed) safety price if wallet is not initialized', async () => {
+      // PS010 v2.0.0 removed the hard-coded PSF fallback price.
       uut.wallet = undefined
+      uut.currentRate = undefined
       const result = await uut.getMcWritePrice()
       // console.log('result: ', result)
-      assert.equal(result, 0.03570889)
+      assert.equal(result, undefined)
     })
   })
 })

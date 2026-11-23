@@ -227,6 +227,9 @@ class Wallet {
 
   // Get the balance of the wallet in sats and PSF tokens.
   // This function is called by the GET /entry/balance controller.
+  // TODO(PS010 v2.0.0 / M5): remove the PSF-token balance. PS010 v2.0.0 no
+  // longer uses PSF tokens at all; this is left in place to keep the balance
+  // endpoint's wire format stable until the token path is deleted (M5).
   async getBalance () {
     const balance = await this.bchWallet.getBalance()
     // console.log('balance: ', balance)

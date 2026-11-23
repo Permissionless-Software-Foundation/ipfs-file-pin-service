@@ -28,7 +28,9 @@ class UseCases {
 
   // Run any startup Use Cases at the start of the app.
   async start () {
-    await this.ipfs.getWritePrice({ claimTxDetails: { height: 893170 } })
+    // Note: PS010 v2.0.0 has no process-wide write-price cache to prime. The pin
+    // price is the operator-configured SATS_PER_MB (PS010 §3, §6).
+
     // Load the usage stats from the database
     await this.usage.loadUsage()
 

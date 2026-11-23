@@ -22,14 +22,12 @@ import Wallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats'
 import RetryQueue from '@chris.troutner/retry-queue'
 import Stream, { Duplex } from 'stream'
-import PSFFPP from 'psffpp'
 import fs from 'fs'
 // Local libraries
 import PinEntity from '../entities/pin.js'
 import config from '../../config/index.js'
 import LocalPinsEntity from '../entities/local-pins.js'
-
-const PSF_TOKEN_ID = '38e97c5d7d3585a2cbf3f9580c82ca33985f9cb0845d4dcce220cb709f9538b0'
+import { sumSatsToPayout, validatePayment, normalizeAddress } from './bch-payment.js'
 
 class IpfsUseCases {
   constructor (localConfig = {}) {
@@ -82,9 +80,9 @@ class IpfsUseCases {
     this._tryToGetCid = this._tryToGetCid.bind(this)
     this._recordDownloadFailure = this._recordDownloadFailure.bind(this)
     this.validateSizeAndPayment = this.validateSizeAndPayment.bind(this)
+    this.getPaymentAddress = this.getPaymentAddress.bind(this)
     this._getCid = this._getCid.bind(this)
     this._getCidWithTimeout = this._getCidWithTimeout.bind(this)
-    this._getTokenQtyDiff = this._getTokenQtyDiff.bind(this)
     this.trackPin = this.trackPin.bind(this)
     this.pinIsBeingTracked = this.pinIsBeingTracked.bind(this)
     this.removePinFromTracker = this.removePinFromTracker.bind(this)
@@ -99,54 +97,57 @@ class IpfsUseCases {
     this.pinTracker = {} // track promises for pinning content
     this.pinTrackerCnt = 0 // See Dev Note at top of file.
     this.pinSuccess = 0
-    this.writePrice = null
-    this.psffpp = null // placeholder
     // this.promiseQueueSize = 0
   }
 
-  // Get the cost to write 1MB per year of data to the PSFFPP network.
-  async getWritePrice (inObj = {}) {
-    try {
-      const { claimTxDetails } = inObj
-      console.log('getWritePrice() claimTxDetails: ', claimTxDetails)
-
-      console.log('getWritePrice() this.wallet.interface: ', this.wallet.ar.interface)
-      console.log('getWritePrice() this.wallet.bchjs.restURL: ', this.wallet.bchjs.restURL)
-
-      if (!this.psffpp) {
-        this.psffpp = new PSFFPP({ wallet: this.wallet })
-      }
-
-      // this.writePrice = await this.retryQueue.addToQueue(this.psffpp.getMcWritePrice, {})
-      // console.log('this.writePrice: ', this.writePrice)
-
-      const writeHistory = await this.retryQueue.addToQueue(this.psffpp.getWritePriceHistory, {})
-      console.log('claimTxDetails() writeHistory: ', writeHistory)
-
-      const height = claimTxDetails.height
-
-      if (!height) {
-        // Return the current write price if this is an unconfirmed TX.
-        this.writePrice = writeHistory[0].writePrice
-      } else {
-        // Return the price for the block height of the claim.
-        const price = writeHistory.find(element => element.height <= height)
-        this.writePrice = price.writePrice
-      }
-
-      return this.writePrice
-    } catch (err) {
-      this.writePrice = 0.03570889
-      console.log('getWritePrice() error: ', err)
-
-      console.error(`Error in use-cases/ipfs.js/getWritePrice(). Returning hard-coded value of ${this.writePrice}.`)
-
-      return this.writePrice
+  // Return the BCH payment details a client needs to pay for a pin:
+  // { address, satsPerMb } (PS010 §6, step 1).
+  //
+  // Phase 1 has no registry, so there is no validFromHeight and no
+  // registryTxid. This fails closed (HTTP 503) if the payout address or the
+  // satsPerMb rate is unset, or if the configured address cannot be
+  // canonicalized. It never guesses an address or a rate.
+  getPaymentAddress () {
+    if (this.config.acceptBchPayment === false) {
+      const err = new Error('BCH payments are disabled (ACCEPT_BCH_PAYMENT=false).')
+      err.status = 503
+      throw err
     }
+
+    const address = this.config.payoutAddress
+    const satsPerMb = this.config.satsPerMb
+
+    if (!address || typeof address !== 'string') {
+      const err = new Error('PAYOUT_ADDRESS is not configured. Refusing to serve a payment address.')
+      err.status = 503
+      throw err
+    }
+    if (typeof satsPerMb !== 'number' || !Number.isFinite(satsPerMb) || satsPerMb <= 0) {
+      const err = new Error('SATS_PER_MB is not configured. Refusing to serve a payment address.')
+      err.status = 503
+      throw err
+    }
+
+    try {
+      // Fail closed if the operator configured an address that cannot be used
+      // for payment comparison.
+      normalizeAddress(address)
+    } catch (err) {
+      const configErr = new Error(`PAYOUT_ADDRESS is not a usable address (${err.message}). Refusing to serve a payment address.`)
+      configErr.status = 503
+      throw configErr
+    }
+
+    return { address, satsPerMb }
   }
 
   // Process a new pin claim by adding it to the database.
   // This function is called by the REST API /ipfs/pin-claim controller.
+  //
+  // PS010 v2.0.0 (Phase 1): a claim is valid only if `proofOfBurnTxid` names a
+  // BCH transaction that paid the configured payout address. The webhook field
+  // name is unchanged (PS010 §5.2), but it now carries the payment txid. There
+  // is no token / proof-of-burn path (PS010 §8.2).
   async processPinClaim (inObj = {}) {
     try {
       console.log('processPinClaim() this.wallet.bchjs.restURL: ', this.wallet.bchjs.restURL)
@@ -157,21 +158,59 @@ class IpfsUseCases {
       console.log(`processPinClaim() inObj at ${now.toLocaleString()}: `, inObj)
       const { proofOfBurnTxid, cid, claimTxid, filename, address } = inObj
 
+      // Fail closed if the BCH payment path is not configured. There is no
+      // fallback address and no fallback rate (PS010 §7.3 F1/F7).
+      const payoutAddress = this.config.payoutAddress
+      const satsPerMb = this.config.satsPerMb
+
+      if (this.config.acceptBchPayment === false) {
+        return {
+          success: false,
+          details: 'BCH payments are disabled (ACCEPT_BCH_PAYMENT=false). Rejecting pin claim.'
+        }
+      }
+      if (!payoutAddress || typeof payoutAddress !== 'string') {
+        return {
+          success: false,
+          details: 'F7: PAYOUT_ADDRESS is not configured. Rejecting pin claim (fail closed).'
+        }
+      }
+      if (typeof satsPerMb !== 'number' || !Number.isFinite(satsPerMb) || satsPerMb <= 0) {
+        return {
+          success: false,
+          details: 'F7: SATS_PER_MB is not configured. Rejecting pin claim (fail closed).'
+        }
+      }
+
       // Wait a few seconds to ensure the TXs have syndicated and been processed
       // by the infrastructure.
       console.log('Waiting 3 seconds to let TXs get processed...')
       await this.wallet.bchjs.Util.sleep(3000)
 
-      console.log(`Processing PoB TX: ${proofOfBurnTxid}`)
-      if (!proofOfBurnTxid) {
-        throw new Error(`proofOfBurnTxid must be a TXID string. Received: ${proofOfBurnTxid.toString()}`)
+      console.log(`Processing payment TX: ${proofOfBurnTxid}`)
+      if (!proofOfBurnTxid || typeof proofOfBurnTxid !== 'string') {
+        throw new Error(`proofOfBurnTxid must be a TXID string. Received: ${proofOfBurnTxid}`)
       }
 
-      // Get TX details for the proof-of-burn TX.
-      let pobTxDetails = await this.wallet.getTxData([proofOfBurnTxid])
-      console.log('processPinClaim() pobTxDetails: ', pobTxDetails)
-      pobTxDetails = pobTxDetails[0]
-      // console.log('pobTxDetails: ', pobTxDetails)
+      // Get TX details for the BCH payment TX. F4: a payment TX that cannot be
+      // fetched is rejected, with a distinct reason.
+      let paymentTxDetails
+      try {
+        const paymentTxs = await this.wallet.getTxData([proofOfBurnTxid])
+        paymentTxDetails = Array.isArray(paymentTxs) ? paymentTxs[0] : paymentTxs
+      } catch (err) {
+        console.error(`F4: could not fetch payment TX ${proofOfBurnTxid}: `, err)
+        paymentTxDetails = null
+      }
+      console.log('processPinClaim() paymentTxDetails: ', paymentTxDetails)
+
+      if (!paymentTxDetails || !Array.isArray(paymentTxDetails.vout)) {
+        // No usable TX data: treat it as unfetchable (F4) rather than guessing.
+        return {
+          success: false,
+          details: `F4: Payment TX ${proofOfBurnTxid} could not be fetched from the blockchain.`
+        }
+      }
 
       // Get TX details for the pin claim.
       console.log('processPinClaim() claimTxid: ', claimTxid)
@@ -180,47 +219,57 @@ class IpfsUseCases {
       claimTxDetails = claimTxDetails[0]
       // console.log('claimTxDetails: ', claimTxDetails)
 
-      // Return false if PoB TX is not a valid SLP TX.
-      if (!pobTxDetails.isValidSlp) {
+      // Sum the satoshis paid to the payout address. Multiple outputs count;
+      // change and other outputs never count (PS010 §7, step 2). Unconfirmed
+      // payment TXs are accepted (PS010 decision 9b): we never look at height.
+      let payment
+      try {
+        payment = sumSatsToPayout({ txDetails: paymentTxDetails, payoutAddress })
+      } catch (err) {
+        console.error('F8: address canonicalization failure: ', err)
         return {
           success: false,
-          details: 'Proof-of-burn not a valid SLP transaction.'
+          details: `F8: Could not normalize the payout address or the payment TX outputs: ${err.message}`
         }
       }
+      console.log('processPinClaim() payment: ', payment)
 
-      // Return false if tokenId does not match.
-      if (pobTxDetails.tokenId !== PSF_TOKEN_ID) {
-        console.log(`PoB TX ${pobTxDetails.txid} does not consume a valid token.`)
-
+      // F2/F6: the presented TX must pay the validating address. If it pays
+      // nothing to the payout address there is no point downloading the file.
+      if (payment.satsPaid <= 0) {
         return {
           success: false,
-          details: 'Proof-of-burn does not consume a valid token'
+          details: `F2/F6: Payment TX ${proofOfBurnTxid} has no output paying the configured payout address (${payment.normalizedPayout}).`
         }
       }
-
-      // Get the difference, or the amount of PSF tokens burned.
-      const tokensBurned = this._getTokenQtyDiff(pobTxDetails)
-      console.log('PSF tokens burned: ', tokensBurned)
 
       const dbModelInput = this.pinEntity.validate({
         proofOfBurnTxid,
         cid,
         filename,
         claimTxid,
-        pobTxDetails,
+        // `pobTxDetails` keeps its historical field name; it now holds the BCH
+        // payment TX, so that old records and tooling stay readable.
+        pobTxDetails: paymentTxDetails,
         claimTxDetails,
-        tokensBurned,
+        paymentKind: 'bch-payment',
+        satsPaid: payment.satsPaid,
+        payoutAddress,
         address
       })
 
       const Pins = this.adapters.localdb.Pins
 
-      // Update dbModel if it exists and  update renewal data if applicable.
-      await this.handleRenewal(inObj, claimTxDetails, pobTxDetails)
+      // Update dbModel if it exists and update renewal data if applicable.
+      await this.handleRenewal(
+        { ...inObj, satsPaid: payment.satsPaid, payoutAddress },
+        claimTxDetails,
+        paymentTxDetails
+      )
 
       // Code below commented out because of the following corner cases:
-      // - If CID was previously submitted with too small of PoB, the claim
-      //   can be re-submitted with proper PoB.
+      // - If CID was previously submitted with too small of a payment, the claim
+      //   can be re-submitted with a proper payment.
       // - Same CID is re-submitted to renew the pinning for another year.
       // Check to see CID is not already in database.
 
@@ -243,6 +292,14 @@ class IpfsUseCases {
             details: 'CID already has valid pin claim. It has already been downloaded and pinned.'
           }
         }
+
+        // The previous claim for this CID did not validate. Adopt the payment
+        // just submitted, so the retry path validates the fresh payment.
+        dbModel.proofOfBurnTxid = proofOfBurnTxid
+        dbModel.paymentKind = 'bch-payment'
+        dbModel.satsPaid = payment.satsPaid
+        dbModel.payoutAddress = payoutAddress
+        await dbModel.save()
       } else {
         // Create the database model for this pin claim.
         dbModel = new Pins(dbModelInput)
@@ -265,7 +322,14 @@ class IpfsUseCases {
 
   // This function is used to handle the renewal of a pin claim.
   // If renewal is needed, then update the database model with the new txids, tx details, and address.
-  async handleRenewal (pinData = {}, claimTxDetails, pobTxDetails) {
+  //
+  // Renewal is a new claim with a new payment reference (PS010 §8.4). The
+  // bookkeeping stays TXID-keyed: a payment txid is not marked as globally
+  // consumed (PS010 decision 9c).
+  async handleRenewal (pinData = {}, claimTxDetails, paymentTxDetails) {
+    // Legacy name for the third argument: it used to be the proof-of-burn TX
+    // and now holds the BCH payment TX.
+    const pobTxDetails = paymentTxDetails
     try {
       const { cid, address } = pinData
       if (!cid || typeof cid !== 'string') {
@@ -318,6 +382,11 @@ class IpfsUseCases {
       // Update the address.
       dbModel.address = address
 
+      // Update the BCH payment data recorded for this claim.
+      dbModel.paymentKind = 'bch-payment'
+      if (typeof pinData.satsPaid === 'number') dbModel.satsPaid = pinData.satsPaid
+      if (pinData.payoutAddress) dbModel.payoutAddress = pinData.payoutAddress
+
       const result = await dbModel.save()
       console.log('handleRenewal() result: ', result)
 
@@ -335,7 +404,7 @@ class IpfsUseCases {
     try {
       // console.log('pinData: ', pinData)
 
-      const { cid, tokensBurned, filename, claimTxDetails } = pinData
+      const { cid, satsPaid, filename, claimTxDetails } = pinData
       // console.log('pinCid() claimTxDetails: ', claimTxDetails)
 
       const cidClass = this.CID.parse(cid)
@@ -379,8 +448,7 @@ class IpfsUseCases {
 
       // Validate that the Pin Claim has appropriate payment, and is under max
       // size requirement.
-      // const isValid = await this.validateSizeAndPayment({ fileSize, tokensBurned })
-      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, satsPaid, claimTxDetails })
       console.log('pinCid() isValid: ', isValid)
 
       this.removePinFromTracker(cid)
@@ -529,7 +597,7 @@ class IpfsUseCases {
   // This is designed to be a fire-and-forget call by the Timer Controller.
   async _tryToGetCid (inObj = {}) {
     const { pinData } = inObj
-    const { cid, tokensBurned, filename, dataPinned, claimTxDetails } = pinData
+    const { cid, satsPaid, filename, dataPinned, claimTxDetails } = pinData
 
     try {
       // Exit if the file is already pinned.
@@ -568,7 +636,7 @@ class IpfsUseCases {
       const now = new Date()
       console.log(`Finished download of ${filename}, ${cid} at ${now.toISOString()}`)
 
-      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, tokensBurned, claimTxDetails })
+      const isValid = await this.retryQueue.addToQueue(this.validateSizeAndPayment, { fileSize, satsPaid, claimTxDetails })
       console.log('_tryToGetCid() isValid: ', isValid)
 
       if (isValid) {
@@ -590,7 +658,7 @@ class IpfsUseCases {
       } else {
         // If the file does not meet size/payment requirements, delete the DB model
         // so the timer does not keep retrying it.
-        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or did not include proper PoB. Removing DB model.`)
+        console.log(`File ${cid} is bigger than max size of ${this.config.maxPinSize} bytes or its BCH payment was insufficient. Removing DB model.`)
 
         this.removePinFromTracker(cid)
 
@@ -625,59 +693,44 @@ class IpfsUseCases {
     }
   }
 
-  // This function returns true if the pin claim matches the following requirments:
+  // This function returns true if the pin claim matches the following requirements:
   // - The file is less than the maximum file size set in the config.
-  // - An appropriate amount of PSF tokens were burnt, relative to the size of the file.
-  // Otherwise it returns false.
+  // - The BCH payment recorded on the claim (satsPaid) covers requiredSats()
+  //   for the file size, within the 98% tolerance (PS010 §7).
+  // Otherwise it returns false. The reason is logged with its PS010 F-code, and
+  // any unexpected condition fails closed.
   async validateSizeAndPayment (inObj = {}) {
     try {
-      const { fileSize, tokensBurned, claimTxDetails } = inObj
-      console.log('tokensBurned: ', tokensBurned)
-      // console.log('validateSizeAndPayment() claimTxDetails: ', claimTxDetails)
+      const { fileSize, satsPaid } = inObj
 
       // Return false if the file is larger than the configured max size.
       const fileSizeIsValid = fileSize < this.config.maxPinSize
       if (!fileSizeIsValid) {
+        console.error(`Pin claim rejected: file size ${fileSize} is not below maxPinSize ${this.config.maxPinSize}.`)
         return false
       }
 
-      // Get the cost in PSF tokens to store 1MB
-      let writePrice
-      if (!this.writePrice) {
-        // this.writePrice = await this.adapters.writePrice.getMcWritePrice()
-        this.writePrice = await this.getWritePrice({ claimTxDetails })
-        writePrice = this.writePrice
-      } else {
-        writePrice = this.writePrice
-      }
-      console.log('writePrice: ', writePrice)
+      // There is no process-wide price cache: the rate is the configured
+      // SATS_PER_MB for every claim (PS010 §3, §6).
+      const paymentCheck = validatePayment({
+        satsPaid,
+        fileSizeBytes: fileSize,
+        satsPerMb: this.config.satsPerMb,
+        payoutAddress: this.config.payoutAddress,
+        acceptBchPayment: this.config.acceptBchPayment
+      })
 
-      // Calculate costs in PSF tokens for this pin request.
-      // const minCost = writePrice
-      // console.log('fileSize: ', fileSize)
-      // const mbCost = fileSize / 1000000 * writePrice
-      // console.log(`minCost: ${writePrice}, mbCost: ${mbCost}`)
-      //
-      // // Validate that enough PSF tokens were paid for this pin.
-      // if (tokensBurned < minCost && tokensBurned < mbCost) {
-      //   return false
-      // }
-
-      // Calculate costs in PSF tokens for this pin request.
-      const mbCost = fileSize / 1000000 * writePrice
-      const minCost = mbCost * 0.98
-      console.log('minCost: ', minCost)
-
-      // Validate that enough PSF tokens were paid for this pin.
-      if (tokensBurned < minCost) {
-        console.error(`Tokens burned were ${tokensBurned}, but required cost is ${mbCost}`)
+      if (!paymentCheck.valid) {
+        console.error(`Pin claim rejected: ${paymentCheck.details}`)
         return false
       }
 
+      console.log(`Pin claim accepted: ${paymentCheck.details}`)
       return true
     } catch (err) {
-      console.error('Error in validateSizeAndPayment()')
-      throw err
+      // Fail closed: an unexpected error must not validate a claim.
+      console.error('Error in validateSizeAndPayment(): ', err)
+      return false
     }
   }
 
@@ -779,55 +832,6 @@ class IpfsUseCases {
     })
   }
 
-  // Get the differential token qty between the inputs and outputs of a tx.
-  // This determins if the tx was a proper token burn.
-  _getTokenQtyDiff (txInfo) {
-    try {
-      // Input validation
-      if (!txInfo) {
-        throw new Error('txInfo is required')
-      }
-      if (!txInfo.vin || !txInfo.vout) {
-        throw new Error('txInfo must contain vin and vout array')
-      }
-
-      // Sum up all the token inputs
-      let inputTokenQty = 0
-      for (let i = 0; i < txInfo.vin.length; i++) {
-        let tokenQty = 0
-        if (!txInfo.vin[i].tokenQty) {
-          tokenQty = 0
-        } else {
-          tokenQty = Number(txInfo.vin[i].tokenQty)
-        }
-        inputTokenQty += tokenQty
-      }
-      // console.log(`inputTokenQty: ${inputTokenQty}`)
-
-      // Sum up all the token outputs
-      let outputTokenQty = 0
-      for (let i = 0; i < txInfo.vout.length; i++) {
-        let tokenQty = 0
-        if (!txInfo.vout[i].tokenQty) {
-          tokenQty = 0
-        } else {
-          tokenQty = Number(txInfo.vout[i].tokenQty)
-        }
-        outputTokenQty += tokenQty
-      }
-      // console.log(`outputTokenQty: ${outputTokenQty}`)
-
-      let diff = inputTokenQty - outputTokenQty
-      diff = this.bchjs.Util.floor8(diff)
-      // console.log(`token difference (burn): ${diff}`)
-
-      return diff
-    } catch (err) {
-      console.error('Error in _getTokenQtyDiff: ', err.message)
-      throw err
-    }
-  }
-
   // Update the state to indicate that a download attempt is in progress for
   // this CID.
   trackPin (cid) {
@@ -911,8 +915,8 @@ class IpfsUseCases {
       try {
         let formattedModel
         if (dbSource === 'Pins') {
-          const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime } = existingModel
-          formattedModel = { dbSource, validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, tokensBurned, recordTime, cid, filename: existingModel.filename }
+          const { validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, paymentKind, satsPaid, payoutAddress, recordTime } = existingModel
+          formattedModel = { dbSource, validClaim, dataPinned, address, proofOfBurnTxid, claimTxid, paymentKind, satsPaid, payoutAddress, recordTime, cid, filename: existingModel.filename }
         } else {
           const { fileSize, datePinned } = existingModel
           formattedModel = { dbSource, dataPinned: true, fileSize, datePinned, cid, filename: existingModel.filename }
@@ -1144,7 +1148,9 @@ class IpfsUseCases {
           filename,
           validClaim,
           dataPinned,
-          tokensBurned,
+          paymentKind,
+          satsPaid,
+          payoutAddress,
           recordTime,
           fileSize
         } = thisPin
@@ -1160,7 +1166,9 @@ class IpfsUseCases {
           filename,
           validClaim,
           dataPinned,
-          tokensBurned,
+          paymentKind,
+          satsPaid,
+          payoutAddress,
           recordTime,
           downloadLink,
           viewLink,

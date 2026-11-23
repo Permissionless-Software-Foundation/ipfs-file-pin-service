@@ -10,20 +10,20 @@ This project runs a [Helia](https://github.com/ipfs/helia) IPFS node and REST AP
 
 The service is activated by [psf-slp-indexer-g2](https://github.com/Permissionless-Software-Foundation/psf-slp-indexer-g2), via a webhook when it detects a new Pin Claim on the blockchain. It depends on [psf-bch-api](https://github.com/Permissionless-Software-Foundation/psf-bch-api) to interact with the BCH blockchain. When a new [Pin Claim](https://github.com/Permissionless-Software-Foundation/specifications/blob/master/ps010-file-pinning-protocol.md) is detected on the blockchain, the service:
 
-1. Validates that a proper proof-of-burn of PSF tokens was submitted with the claim.
-2. Verifies that the burn amount meets the required cost based on file size.
+1. Validates that a BCH payment to the service's payout address was submitted with the claim (PS010 v2.0.0, BCH-only).
+2. Verifies that the amount paid meets `requiredSats()` for the file size (100 KB floor, 98% tolerance).
 3. Downloads the IPFS content and pins it to the local Helia node.
 4. Serves the pinned content via HTTP download and view endpoints.
 
 ## Features
 
-- **Blockchain-Validated Pinning** -- Processes Pin Claims from the Bitcoin Cash blockchain and validates proof-of-burn transactions against the PSF token write price set by the [PSF Minting Council](https://PSFoundation.cash).
+- **Blockchain-Validated Pinning** -- Processes Pin Claims from the Bitcoin Cash blockchain and validates the BCH payment made to the configured payout address, priced in satoshis per MB with a locked 100 KB minimum charge.
 - **Embedded Helia IPFS Node** -- Runs a full Helia IPFS node with TCP, WebSocket, and optional WebRTC transports. Supports circuit relay for nodes behind NATs/firewalls.
 - **Dual API Interface** -- Exposes both a REST API over HTTP and a JSON-RPC API over IPFS for decentralized access.
 - **File Downloads and Viewing** -- Serves pinned content via HTTP endpoints for direct file download and in-browser viewing.
 - **Automatic Retry Queue** -- Failed downloads are retried with a concurrent queue (up to 20 parallel downloads, 5-minute timeout per attempt).
-- **Pin Renewals** -- Supports renewing pins with additional proof-of-burn transactions.
-- **Dynamic Pricing** -- Fetches the current write price from the PSF Minting Council so pin costs stay in sync with token valuation.
+- **Pin Renewals** -- Supports renewing pins with a new BCH payment and claim.
+- **Configurable Pricing** -- Pin price is the operator-configured `SATS_PER_MB` (satoshis per MB per year). `GET /ipfs/payment-address` publishes the payout address and rate to clients. There is no USD oracle and no token price feed.
 - **User Management** -- Built-in user authentication with JWT tokens and Passport.js.
 - **Periodic Maintenance** -- Timer-based controllers handle pin processing (every 10 minutes), usage cleanup (every hour), and automatic restarts (every 6 hours).
 

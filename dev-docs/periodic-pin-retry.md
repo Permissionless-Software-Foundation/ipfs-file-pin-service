@@ -2,11 +2,11 @@
 
 High-level overview of the background loop that retries downloading and pinning files for Pin Claims that were not completed at submit time.
 
-For the full claim lifecycle (PoB validation, renewal, submit-time `pinCid`), see [pin-claim-processing.md](./pin-claim-processing.md).
+For the full claim lifecycle (BCH payment validation, renewal, submit-time `pinCid`), see [pin-claim-processing.md](./pin-claim-processing.md).
 
 ## Why it exists
 
-Submitting a pin claim via `POST /ipfs/pin-claim` validates the proof-of-burn and immediately kicks off `pinCid()` without waiting for it to finish. That is intentional: the API should return quickly.
+Submitting a pin claim via `POST /ipfs/pin-claim` validates the BCH payment and immediately kicks off `pinCid()` without waiting for it to finish. That is intentional: the API should return quickly.
 
 IPFS content is often not reachable yet when the claim is first seen (publisher offline, DHT not warmed up, peers not connected). A single download attempt at submit time will frequently fail even though the claim is valid and the file will appear later.
 

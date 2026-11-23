@@ -18,6 +18,10 @@ describe('#ipfs-use-case', () => {
   let uut
   let sandbox
   let mockData
+  // Original config values, restored after each test.
+  let origPayoutAddress
+  let origSatsPerMb
+  let origMaxPinSize
 
   before(async () => {
     // Delete all previous users in the database.
@@ -30,9 +34,25 @@ describe('#ipfs-use-case', () => {
     mockData = cloneDeep(mockDataLib)
 
     uut = new IpfsUseCases({ adapters })
+
+    // PS010 v2.0.0: BCH payment config used by processPinClaim() and
+    // validateSizeAndPayment(). The shared config object is restored after each
+    // test.
+    origPayoutAddress = config.payoutAddress
+    origSatsPerMb = config.satsPerMb
+    origMaxPinSize = config.maxPinSize
+    uut.config.payoutAddress = mockDataLib.PAYOUT_ADDRESS
+    uut.config.satsPerMb = 2000
+    uut.config.acceptBchPayment = true
   })
 
-  afterEach(() => sandbox.restore())
+  afterEach(() => {
+    sandbox.restore()
+
+    config.payoutAddress = origPayoutAddress
+    config.satsPerMb = origSatsPerMb
+    config.maxPinSize = origMaxPinSize
+  })
 
   describe('#constructor', () => {
     it('should throw an error if adapters are not passed in', () => {
@@ -59,110 +79,88 @@ describe('#ipfs-use-case', () => {
     })
   })
 
-  describe('#getWritePrice', () => {
-    it('should get the write price', async () => {
-      sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 1, height: 1 }])
-      const inObj = {
-        claimTxDetails: { height: null }
-      }
-      const result = await uut.getWritePrice(inObj)
-      assert.isNumber(result)
-      assert.equal(result, 1)
-    })
-    it('should get default write price on error', async () => {
-      sandbox.stub(uut.retryQueue, 'addToQueue').throws(new Error('test error'))
-      const inObj = {
-        claimTxDetails: { height: null }
-      }
-      const result = await uut.getWritePrice(inObj)
-      assert.isNumber(result)
-      assert.equal(result, 0.03570889)
-    })
-    it('should handle tx height', async () => {
-      sandbox.stub(uut.retryQueue, 'addToQueue').resolves([{ writePrice: 5, height: 5 }, { writePrice: 2, height: 2 }])
-      const inObj = {
-        claimTxDetails: { height: 3 }
-      }
-      const result = await uut.getWritePrice(inObj)
-      assert.isNumber(result)
-      assert.equal(result, 2)
-    })
-  })
   describe('#processPinClaim', () => {
-    it('should report if CID is already being tracked by DB', async () => {
-      // Mock dependencies and force desired code path
+    const inObj = {
+      proofOfBurnTxid: 'f5e4b4b7df7b1bdd8f0a5a1b3f6b7e8d9c0a1b2c3d4e5f60718293a4b5c6d7e8',
+      cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
+      claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
+      filename: 'test.txt',
+      address: 'fake-address'
+    }
+
+    // Stub the two TX fetches: the BCH payment TX, then the claim TX.
+    function stubTxData (paymentTx = mockData.paymentValidTxDetails) {
       sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
-        .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.adapters.localdb.Pins, 'find').resolves([1])
-      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
-      sandbox.stub(uut, 'handleRenewal').resolves(true)
-
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt',
-        address: 'fake-address'
-      }
-
-      const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
-
-      assert.equal(result.success, true)
-    })
-
-    it('should return false if PoB is not a valid SLP TX', async () => {
-      // Mock dependencies and force desired code path
-      mockData.pobValidTxDetails01.isValidSlp = false
-      sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
+        .onCall(0).resolves([paymentTx])
         .onCall(1).resolves([mockData.claimValidTxDetails01])
       sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+    }
 
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905'
-      }
+    it('should fail closed if PAYOUT_ADDRESS is not configured (F7)', async () => {
+      uut.config.payoutAddress = undefined
 
       const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
 
       assert.equal(result.success, false)
+      assert.include(result.details, 'F7')
+      assert.include(result.details, 'PAYOUT_ADDRESS')
     })
 
-    it('should return false if wrong token is burned', async () => {
-      // Mock dependencies and force desired code path
-      mockData.pobValidTxDetails01.tokenId = 'fake-token-id'
-      sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
-        .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
-
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905'
-      }
+    it('should fail closed if SATS_PER_MB is not configured (F7)', async () => {
+      uut.config.satsPerMb = null
 
       const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
 
       assert.equal(result.success, false)
+      assert.include(result.details, 'F7')
+      assert.include(result.details, 'SATS_PER_MB')
+    })
+
+    it('should reject claims if BCH payments are disabled', async () => {
+      uut.config.acceptBchPayment = false
+
+      const result = await uut.processPinClaim(inObj)
+
+      assert.equal(result.success, false)
+      assert.include(result.details, 'ACCEPT_BCH_PAYMENT')
+    })
+
+    it('should reject the claim if the payment TX cannot be fetched (F4)', async () => {
+      sandbox.stub(uut.wallet, 'getTxData').rejects(new Error('test error'))
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+
+      const result = await uut.processPinClaim(inObj)
+
+      assert.equal(result.success, false)
+      assert.include(result.details, 'F4')
+    })
+
+    it('should reject the claim if the payment TX is not returned (F4)', async () => {
+      sandbox.stub(uut.wallet, 'getTxData').resolves([])
+      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
+
+      const result = await uut.processPinClaim(inObj)
+
+      assert.equal(result.success, false)
+      assert.include(result.details, 'F4')
+    })
+
+    it('should reject the claim if the payment went to another address (F2/F6)', async () => {
+      stubTxData(mockData.paymentWrongAddressTxDetails)
+
+      const result = await uut.processPinClaim(inObj)
+
+      assert.equal(result.success, false)
+      assert.include(result.details, 'F2/F6')
     })
 
     it('should catch, report, and throw errors', async () => {
       try {
-        // Mock dependencies and force desired code path
-        sandbox.stub(uut.wallet, 'getTxData').rejects(new Error('test error'))
+        // The payment TX resolves, but the claim TX fetch throws.
+        sandbox.stub(uut.wallet, 'getTxData')
+          .onCall(0).resolves([mockData.paymentValidTxDetails])
+          .onCall(1).rejects(new Error('test error'))
         sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
-
-        const inObj = {
-          proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-          cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-          claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905'
-        }
 
         await uut.processPinClaim(inObj)
 
@@ -172,76 +170,75 @@ describe('#ipfs-use-case', () => {
       }
     })
 
-    it('should process a valid pin claim', async () => {
-      // Mock dependencies and force desired code path
-      sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
-        .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ validClaim: true })
+    it('should report if CID already has a valid claim awaiting download', async () => {
+      stubTxData()
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ validClaim: true, dataPinned: false })
       sandbox.stub(uut, 'pinCid').resolves()
-      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
       sandbox.stub(uut, 'handleRenewal').resolves(true)
 
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt',
-        address: 'fake-address'
-      }
-
       const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
 
       assert.equal(result.success, true)
       assert.equal(result.details, 'CID already has valid pin claim and is awaiting download.')
     })
-    it('should process a valid pin claim and  pinned cid', async () => {
-      // Mock dependencies and force desired code path
-      sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
-        .onCall(1).resolves([mockData.claimValidTxDetails01])
+
+    it('should report if CID already has a valid claim and is pinned', async () => {
+      stubTxData()
       sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves({ validClaim: true, dataPinned: true })
       sandbox.stub(uut, 'pinCid').resolves()
-      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
       sandbox.stub(uut, 'handleRenewal').resolves(true)
 
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt',
-        address: 'fake-address'
-      }
-
       const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
 
       assert.equal(result.success, true)
       assert.equal(result.details, 'CID already has valid pin claim. It has already been downloaded and pinned.')
     })
-    it('should process new pin claim', async () => {
-      // Mock dependencies and force desired code path
-      sandbox.stub(uut.wallet, 'getTxData')
-        .onCall(0).resolves([mockData.pobValidTxDetails01])
-        .onCall(1).resolves([mockData.claimValidTxDetails01])
-      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves(null)
-      sandbox.stub(uut, 'pinCid').resolves()
-      sandbox.stub(uut.wallet.bchjs.Util, 'sleep').resolves()
 
-      const inObj = {
-        proofOfBurnTxid: '5bfcdca588830245dcd9353f45bb1d06640d7fada0000160ae2789a887b23766',
-        cid: 'bafybeicd455l7c6mxiogptqcg6md474qmzzmzobgzu4vfms4wnek2hxguy',
-        claimTxid: '09555a14fd2de71a54c0317a8a22ae17bc43512116b063e263e41b3fc94f8905',
-        filename: 'test.txt',
-        address: 'fake-address'
+    it('should process a new pin claim and record the BCH payment', async () => {
+      stubTxData()
+      sandbox.stub(uut, 'pinCid').resolves()
+
+      const origPins = uut.adapters.localdb.Pins
+      let captured
+      class PinsMock {
+        constructor (model) { captured = model }
+        async save () { return true }
+        static async findOne () { return null }
       }
+      uut.adapters.localdb.Pins = PinsMock
+
+      try {
+        const result = await uut.processPinClaim(inObj)
+
+        assert.equal(result.success, true)
+        assert.include(result.details, 'Pinned new file with CID')
+
+        // The payment is recorded on the pin, keyed by the payment txid.
+        assert.equal(captured.proofOfBurnTxid, inObj.proofOfBurnTxid)
+        assert.equal(captured.paymentKind, 'bch-payment')
+        assert.equal(captured.satsPaid, 3000)
+        assert.equal(captured.payoutAddress, mockData.PAYOUT_ADDRESS)
+        assert.notProperty(captured, 'tokensBurned')
+      } finally {
+        uut.adapters.localdb.Pins = origPins
+      }
+    })
+
+    it('should adopt the new payment on a previously failed claim', async () => {
+      stubTxData()
+      sandbox.stub(uut, 'pinCid').resolves()
+      sandbox.stub(uut, 'handleRenewal').resolves(true)
+
+      const dbModel = { validClaim: null, dataPinned: false, save: sandbox.stub().resolves(true) }
+      sandbox.stub(uut.adapters.localdb.Pins, 'findOne').resolves(dbModel)
 
       const result = await uut.processPinClaim(inObj)
-      // console.log('result: ', result)
 
       assert.equal(result.success, true)
-      assert.include(result.details, 'Pinned new file with CID')
+      assert.equal(dbModel.satsPaid, 3000)
+      assert.equal(dbModel.paymentKind, 'bch-payment')
+      assert.equal(dbModel.payoutAddress, mockData.PAYOUT_ADDRESS)
+      assert.isTrue(dbModel.save.calledOnce)
     })
   })
 
@@ -370,45 +367,6 @@ describe('#ipfs-use-case', () => {
     })
   })
 
-  describe('#_getTokenQtyDiff', () => {
-    it('should throw error if TX data is not provided', () => {
-      try {
-        uut._getTokenQtyDiff()
-
-        assert.fail('Unexpected code path')
-      } catch (err) {
-        assert.include(err.message, 'txInfo is required')
-      }
-    })
-
-    it('should throw error if TX data does not have vin or vout arrays', () => {
-      try {
-        uut._getTokenQtyDiff({})
-
-        assert.fail('Unexpected code path')
-      } catch (err) {
-        assert.include(err.message, 'txInfo must contain vin and vout array')
-      }
-    })
-
-    it('should return the difference of a token burn', () => {
-      const result = uut._getTokenQtyDiff(mockData.pobValidTxDetails01)
-      // console.log('result: ', result)
-
-      assert.equal(result, 0.08335232)
-    })
-
-    it('should handle TXs without a tokenQty', () => {
-      mockData.pobValidTxDetails01.vin[0].tokenQty = null
-      mockData.pobValidTxDetails01.vout[1].tokenQty = null
-
-      const result = uut._getTokenQtyDiff(mockData.pobValidTxDetails01)
-      // console.log('result: ', result)
-
-      assert.equal(result, 0)
-    })
-  })
-
   describe('#pinCid', () => {
     it('should return false and remove pin model if file is too big', async () => {
       // Mock dependencies and force desired code path.
@@ -516,7 +474,7 @@ describe('#ipfs-use-case', () => {
       let saveCount = 0
       const pin = {
         cid,
-        tokensBurned: 1,
+        satsPaid: 3000,
         filename: 'test.png',
         claimTxDetails: {},
         save: async () => { saveCount++ }
@@ -776,7 +734,9 @@ describe('#ipfs-use-case', () => {
           filename: 'fake-filename',
           validClaim: true,
           dataPinned: true,
-          tokensBurned: 0.08335232
+          paymentKind: 'bch-payment',
+          satsPaid: 3000,
+          payoutAddress: 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr'
         })
       }
 
@@ -1056,65 +1016,73 @@ describe('#ipfs-use-case', () => {
     it('should return false if file size is greater than max pin size', async () => {
       // Mock data
       uut.config.maxPinSize = 100000
-      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-      mockPinModel.fileSize = 123456
+      const inObj = { fileSize: 123456, satsPaid: 1000000 }
 
-      const result = await uut.validateSizeAndPayment(mockPinModel)
+      const result = await uut.validateSizeAndPayment(inObj)
       assert.equal(result, false)
     })
-    it('should return false if tokens burned is less than the cost of the pin', async () => {
-      // Mock data
-      uut.config.maxPinSize = 1000000000
-      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-      mockPinModel.fileSize = 123456789
-      mockPinModel.tokensBurned = 0.0001
 
-      const result = await uut.validateSizeAndPayment(mockPinModel)
+    it('should return true when the BCH payment covers the 100 KB floor', async () => {
+      // 50 KB file pays the floor (100 KB) at 2000 sats/MB = 200 sats.
+      const inObj = { fileSize: 50000, satsPaid: 200 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, true)
+    })
+
+    it('should accept a payment within the 98% tolerance', async () => {
+      // 1 MB (well, 1,000,000 bytes) at 2000 sats/MB requires 2000 sats.
+      // 98% of 2000 = 1960 sats must be accepted.
+      const inObj = { fileSize: 1000000, satsPaid: 1960 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, true)
+    })
+
+    it('should return false if the payment is below the 98% tolerance (F5)', async () => {
+      const inObj = { fileSize: 1000000, satsPaid: 1959 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
       assert.equal(result, false)
     })
-    it('should return true on success validations', async () => {
-      // Mock data
-      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-      uut.writePrice = null
-      uut.config.maxPinSize = 1000000000
-      mockPinModel.fileSize = 123456789
-      mockPinModel.tokensBurned = 0.1
-      sandbox.stub(uut, 'getWritePrice').resolves(0.00000001)
 
-      const result = await uut.validateSizeAndPayment(mockPinModel)
-      assert.equal(result, true)
+    it('should return false if no sats were paid to the payout address (F2/F6)', async () => {
+      const inObj = { fileSize: 1000000, satsPaid: 0 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
     })
-    it('should not get writePrice if it already eist', async () => {
-      // Mock data
-      const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-      uut.writePrice = 0.00000001
-      uut.config.maxPinSize = 1000000000
-      mockPinModel.fileSize = 123456789
-      mockPinModel.tokensBurned = 0.1
-      const spy = sandbox.stub(uut, 'getWritePrice').resolves(0.00000001)
 
-      const result = await uut.validateSizeAndPayment(mockPinModel)
-      assert.equal(result, true)
-      assert.isTrue(spy.notCalled)
+    it('should fail closed if SATS_PER_MB is not configured (F7)', async () => {
+      uut.config.satsPerMb = null
+      const inObj = { fileSize: 1000, satsPaid: 100000000 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
     })
-    it('should handle error on getWritePrice', async () => {
-      try {
-        // Mock data
-        const mockPinModel = Object.assign({}, PinDataModelMock.pinModelMock)
-        uut.writePrice = null
-        uut.config.maxPinSize = 1000000000
-        mockPinModel.fileSize = 123456789
-        mockPinModel.tokensBurned = 0.1
 
-        // Stub function
-        sandbox.stub(uut, 'getWritePrice').throws(new Error('test error'))
+    it('should fail closed if PAYOUT_ADDRESS is not configured (F7)', async () => {
+      uut.config.payoutAddress = null
+      const inObj = { fileSize: 1000, satsPaid: 100000000 }
 
-        // Call function
-        const result = await uut.validateSizeAndPayment(mockPinModel)
-        assert.equal(result, false)
-      } catch (error) {
-        assert.include(error.message, 'test error')
-      }
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
+    })
+
+    it('should fail closed if the payout address is unusable (F8)', async () => {
+      uut.config.payoutAddress = 'not-an-address'
+      const inObj = { fileSize: 1000, satsPaid: 100000000 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
+    })
+
+    it('should handle unexpected errors by failing closed', async () => {
+      // A non-numeric file size makes the fee math throw.
+      const inObj = { fileSize: 'oops', satsPaid: 100000000 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
     })
   })
   describe('#_getCidWithTimeout', () => {

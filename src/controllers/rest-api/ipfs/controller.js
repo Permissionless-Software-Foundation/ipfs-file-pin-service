@@ -36,6 +36,7 @@ class IpfsRESTControllerLib {
     this.handleError = this.handleError.bind(this)
     this.connect = this.connect.bind(this)
     this.pinClaim = this.pinClaim.bind(this)
+    this.getPaymentAddress = this.getPaymentAddress.bind(this)
     this.pinStatus = this.pinStatus.bind(this)
     this.downloadFile = this.downloadFile.bind(this)
     this.getThisNode = this.getThisNode.bind(this)
@@ -169,6 +170,44 @@ class IpfsRESTControllerLib {
   }
 
   /**
+   * @api {get} /ipfs/payment-address Get the BCH address and rate to pay for a pin
+   * @apiPermission public
+   * @apiName GetPaymentAddress
+   * @apiGroup REST IPFS
+   *
+   * @apiDescription Returns the payout address and the sats-per-MB rate that a
+   * client must pay before submitting a Pin Claim (PS010 v2.0.0 §6, step 1).
+   * Phase 1 has no pool registry, so there is no validFromHeight and no
+   * registryTxid. This endpoint fails closed (HTTP 503) if the payout address or
+   * the rate is unset; it never returns a guessed address or rate.
+   *
+   * @apiExample Example usage:
+   * curl -H "Content-Type: application/json" -X GET localhost:5031/ipfs/payment-address
+   *
+   * @apiSuccess {String} address BCH address to pay.
+   * @apiSuccess {Number} satsPerMb Price in satoshis per MB per year.
+   *
+   * @apiSuccessExample {json} Success-Response:
+   *     HTTP/1.1 200 OK
+   *     {
+   *       "address": "bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr",
+   *       "satsPerMb": 2000
+   *     }
+   *
+   * @apiError ServiceUnavailable Payout address or satsPerMb is not configured.
+   */
+  async getPaymentAddress (ctx) {
+    try {
+      const paymentAddress = this.useCases.ipfs.getPaymentAddress()
+
+      ctx.body = paymentAddress
+    } catch (err) {
+      wlogger.error('Error in ipfs/controller.js/getPaymentAddress():', err)
+      this.handleError(ctx, err)
+    }
+  }
+
+  /**
    * @api {post} /ipfs/pin-claim Submit a Pin Claim for evaluation
    * @apiName PinClaim
    * @apiGroup IPFS
@@ -179,7 +218,8 @@ class IpfsRESTControllerLib {
    * @apiExample Example usage:
    * curl -H "Content-Type: application/json" -X POST -d '{ "proofOfBurnTxid": "be4b63156c93f58ed311d403d9f756deda9abbc81d0fef8fbe5d769538b4261c", "cid": "bafybeied3zdwdiro7fqytyha2yfband4lwcrtozmf6shynylt3kexh26dq", "claimTxid": "c71e2f2cdf8658d90c61ac6183b8ffeeb359779807b317386044705d8352f0f2", "filename": "mutable-67ccefcca67097473e78ca10.json", "address": "bitcoincash:qqs2wrahl6azn9qdyrmp9ygeejqvzr8ruv7e9m30fr" }' http://localhost:5031/ipfs/pin-claim
    *
-   * @apiParam {String} proofOfBurnTxid Proof of Burn Transaction ID.
+   * @apiParam {String} proofOfBurnTxid Payment Transaction ID (the BCH payment
+   * to the payout address, per PS010 v2.0.0). The field name is unchanged.
    * @apiParam {String} cid CID of the file to be pinned.
    * @apiParam {String} claimTxid Claim Transaction ID.
    * @apiParam {String} filename Filename of the file to be pinned.

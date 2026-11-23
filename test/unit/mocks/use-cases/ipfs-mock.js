@@ -105,7 +105,108 @@ const claimValidTxDetails01 = {
   isValidSlp: false
 }
 
+// PS010 v2.0.0: the payout address that the mock claims pay.
+export const PAYOUT_ADDRESS = 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr'
+
+// Another valid BCH address, used as the "change" / wrong-address output.
+export const OTHER_ADDRESS = 'bitcoincash:qqkg30ryje97al52htqwvveha538y7gttywut3cdqv'
+
+// A BCH payment TX that pays the payout address in two outputs (multiple
+// payout outputs must all count) and sends change elsewhere.
+// Paid to payout: 2000 + 1000 = 3000 sats.
+const paymentValidTxDetails = {
+  txid: 'f5e4b4b7df7b1bdd8f0a5a1b3f6b7e8d9c0a1b2c3d4e5f60718293a4b5c6d7e8',
+  hash: 'f5e4b4b7df7b1bdd8f0a5a1b3f6b7e8d9c0a1b2c3d4e5f60718293a4b5c6d7e8',
+  version: 2,
+  size: 226,
+  locktime: 0,
+  vin: [
+    {
+      txid: 'aa11bb22cc33dd44ee55ff6600112233445566778899aabbccddeeff00112233',
+      vout: 0,
+      scriptSig: { asm: 'OP_CHECKSIG', hex: '00' },
+      sequence: 4294967295,
+      address: 'bitcoincash:qz4r0e5c5x7w8p9q0r1s2t3u4v5w6x7y8z9q0r1s2t',
+      value: 0.005
+    }
+  ],
+  vout: [
+    {
+      value: 0.00002, // 2000 sats
+      n: 0,
+      scriptPubKey: {
+        asm: 'OP_DUP OP_HASH160 efb0b43fb6c6afb927cdb90e98409acdec16e12f OP_EQUALVERIFY OP_CHECKSIG',
+        hex: '76a914efb0b43fb6c6afb927cdb90e98409acdec16e12f88ac',
+        reqSigs: 1,
+        type: 'pubkeyhash',
+        addresses: [PAYOUT_ADDRESS]
+      }
+    },
+    {
+      value: 0.00001, // 1000 sats, second output to the same payout address
+      n: 1,
+      // psf-slp-indexer reports the address here, not in scriptPubKey.
+      address: 'qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr'
+    },
+    {
+      value: 0.0048, // change, must not count
+      n: 2,
+      scriptPubKey: {
+        asm: 'OP_DUP OP_HASH160 20a70fb7feba29940d20f6129119cc80c10ce3e3 OP_EQUALVERIFY OP_CHECKSIG',
+        hex: '76a91420a70fb7feba29940d20f6129119cc80c10ce3e388ac',
+        reqSigs: 1,
+        type: 'pubkeyhash',
+        addresses: [OTHER_ADDRESS]
+      }
+    }
+  ],
+  blockheight: 850000,
+  confirmations: 3,
+  isSlpTx: false,
+  isValidSlp: false
+}
+
+// A BCH payment TX that pays only other addresses (F2/F6).
+const paymentWrongAddressTxDetails = {
+  txid: 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
+  hash: 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
+  version: 2,
+  size: 226,
+  locktime: 0,
+  vin: [
+    {
+      txid: 'aa11bb22cc33dd44ee55ff6600112233445566778899aabbccddeeff00112233',
+      vout: 0,
+      scriptSig: { asm: 'OP_CHECKSIG', hex: '00' },
+      sequence: 4294967295,
+      address: 'bitcoincash:qqkg30ryje97al52htqwvveha538y7gttywut3cdqv',
+      value: 0.005
+    }
+  ],
+  vout: [
+    {
+      value: 0.00002,
+      n: 0,
+      scriptPubKey: {
+        asm: 'OP_DUP OP_HASH160 20a70fb7feba29940d20f6129119cc80c10ce3e3 OP_EQUALVERIFY OP_CHECKSIG',
+        hex: '76a91420a70fb7feba29940d20f6129119cc80c10ce3e388ac',
+        reqSigs: 1,
+        type: 'pubkeyhash',
+        addresses: [OTHER_ADDRESS]
+      }
+    }
+  ],
+  blockheight: 850001,
+  confirmations: 0,
+  isSlpTx: false,
+  isValidSlp: false
+}
+
 export default {
   pobValidTxDetails01,
-  claimValidTxDetails01
+  claimValidTxDetails01,
+  paymentValidTxDetails,
+  paymentWrongAddressTxDetails,
+  PAYOUT_ADDRESS,
+  OTHER_ADDRESS
 }
