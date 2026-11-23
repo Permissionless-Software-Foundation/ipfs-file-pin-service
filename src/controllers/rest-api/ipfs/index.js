@@ -58,6 +58,7 @@ class IpfsRouter {
     this.router.post('/relays', this.ipfsRESTController.getRelays)
     this.router.post('/connect', this.ipfsRESTController.connect)
     this.router.post('/pin-claim', this.ipfsRESTController.pinClaim)
+    this.router.get('/payment-address', this.ipfsRESTController.getPaymentAddress)
     this.router.post('/pin-local-file', this.pinLocalFile)
     this.router.get('/pin-status/:cid', this.ipfsRESTController.pinStatus)
     this.router.get('/download/:cid', this.ipfsRESTController.downloadFile)

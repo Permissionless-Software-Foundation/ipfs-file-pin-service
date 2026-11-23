@@ -185,6 +185,30 @@ describe('#IPFS REST API', () => {
     })
   })
 
+  describe('#GET /payment-address', () => {
+    it('should return the payment address and satsPerMb', async () => {
+      await uut.getPaymentAddress(ctx)
+
+      assert.equal(ctx.body.address, 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr')
+      assert.equal(ctx.body.satsPerMb, 2000)
+    })
+
+    it('should return 503 status when the payment config is unset (fail closed)', async () => {
+      try {
+        const err = new Error('SATS_PER_MB is not configured.')
+        err.status = 503
+        sandbox.stub(uut.useCases.ipfs, 'getPaymentAddress').throws(err)
+
+        await uut.getPaymentAddress(ctx)
+
+        assert.fail('Unexpected result')
+      } catch (error) {
+        assert.equal(error.status, 503)
+        assert.include(error.message, 'SATS_PER_MB is not configured.')
+      }
+    })
+  })
+
   describe('#POST /pin-claim', () => {
     it('should return 422 status on biz logic error', async () => {
       try {

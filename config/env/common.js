@@ -162,10 +162,26 @@ export default {
   // Maximum allowable files size, in bytes.
   maxPinSize: 100000000,
 
-  // Quantity of tokens required to burn in order to pin 1MB. This
-  // default value is overwritten by a lookup of the write price set by the
-  // PSF Minting Council
-  reqTokenQty: 0.03570889,
+  // BCH payment configuration (PS010 v2.0.0, Phase 1).
+  //
+  // Clean break: pin payment is validated as a BCH payment only. There is no
+  // PSF-token proof-of-burn path, no PS009 write-price lookup and no token
+  // fallback price. See dev-docs/pin-claim-processing.md.
+
+  // Address that receives pin payments. Served by GET /ipfs/payment-address and
+  // used to validate every claim. Defaults to the PSF 'pinning' wallet.
+  payoutAddress: process.env.PAYOUT_ADDRESS
+    ? process.env.PAYOUT_ADDRESS
+    : 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr',
+
+  // Price of pinning, in satoshis per megabyte per year. Required: if this is
+  // unset, payment validation fails closed (PS010 §7.3 F7).
+  satsPerMb: process.env.SATS_PER_MB ? parseInt(process.env.SATS_PER_MB) : null,
+
+  // Accept BCH payments. Set ACCEPT_BCH_PAYMENT=false to stop accepting claims.
+  acceptBchPayment: process.env.ACCEPT_BCH_PAYMENT
+    ? process.env.ACCEPT_BCH_PAYMENT !== 'false'
+    : true,
 
   // domainName: 'https://pin.fullstack.cash'
   domainName: process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'http://localhost:5031',

@@ -1,10 +1,30 @@
 /*
   Pin Entity
+
+  PS010 v2.0.0 (BCH payment model). A pin claim records the BCH payment that
+  paid for it:
+  - `proofOfBurnTxid` keeps its historical name and now holds the payment txid
+    (PS010 §5.2, §7.5).
+  - `pobTxDetails` keeps its historical name and now holds the payment TX data.
+  - `paymentKind` is 'bch-payment' for every new record.
+  - `satsPaid` is the satoshis paid to `payoutAddress` by that TX.
+  No PSF-token fields are written for new records (PS010 §8.2).
 */
 
 class Pin {
   validate (inObj = {}) {
-    const { proofOfBurnTxid, cid, claimTxid, pobTxDetails, claimTxDetails, tokensBurned, filename, address } = inObj
+    const {
+      proofOfBurnTxid,
+      cid,
+      claimTxid,
+      pobTxDetails,
+      claimTxDetails,
+      paymentKind,
+      satsPaid,
+      payoutAddress,
+      filename,
+      address
+    } = inObj
 
     // Input Validation
     if (!proofOfBurnTxid || typeof proofOfBurnTxid !== 'string') {
@@ -22,6 +42,12 @@ class Pin {
     if (!address || typeof address !== 'string') {
       throw new Error("Property 'address' must be a string!")
     }
+    if (!payoutAddress || typeof payoutAddress !== 'string') {
+      throw new Error("Property 'payoutAddress' must be a string!")
+    }
+    if (typeof satsPaid !== 'number' || !Number.isFinite(satsPaid) || satsPaid <= 0) {
+      throw new Error("Property 'satsPaid' must be a number greater than 0!")
+    }
 
     const now = new Date()
     const recordTime = now.getTime()
@@ -33,7 +59,9 @@ class Pin {
       claimTxid,
       pobTxDetails,
       claimTxDetails,
-      tokensBurned,
+      paymentKind: paymentKind || 'bch-payment',
+      satsPaid,
+      payoutAddress,
       address,
       validClaim: null,
       dataPinned: false,

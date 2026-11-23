@@ -1,4 +1,12 @@
 
+/*
+  DEPRECATED (PS010 v2.0.0 / M5): this adapter implemented the PS009 write-price
+  history lookup and the hard-coded PSF-token fallback price. Pin payment is now
+  BCH-only and priced from SATS_PER_MB (see src/use-cases/required-sats.js), so
+  nothing in the claim path uses this adapter any more. It is no longer
+  initialized (see adapters/index.js) and is scheduled for deletion in M5.
+*/
+
 // Global npm libraries
 import axios from 'axios'
 import MultisigApproval from 'psf-multisig-approval'
@@ -37,7 +45,9 @@ class WritePrice {
     this.WritePriceModel = WritePriceModel
 
     // state
-    this.currentRate = config.reqTokenQty
+    // Note: config.reqTokenQty was removed in PS010 v2.0.0 (clean break). This
+    // legacy adapter therefore has no default rate; it is dead code pending M5.
+    this.currentRate = null
     this.currentRateInBch = null
     this.priceHistory = []
     this.filterTxids = [] // Tracks invalid approval TXs
@@ -142,7 +152,7 @@ class WritePrice {
     // This value is returned if there are any issues returning the write price.
     // It should be higher than actual fee, so that any writes will propegate to
     // the P2WDB nodes that successfully retrieved the current write price.
-    let writePrice = this.config.reqTokenQty
+    let writePrice = this.currentRate
 
     try {
       const WRITE_PRICE_ADDR = 'bitcoincash:qrwe6kxhvu47ve6jvgrf2d93w0q38av7s5xm9xfehr'

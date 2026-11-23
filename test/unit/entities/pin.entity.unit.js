@@ -62,13 +62,36 @@ describe('#Pin-Entity', () => {
       }
     })
 
-    it('should return a Pin object', () => {
+    it('should throw an error if payoutAddress is not provided', () => {
+      try {
+        uut.validate({ proofOfBurnTxid: 'fake-txid', cid: 'test', claimTxid: 'fake-txid', filename: 'test.txt', address: 'fake-address' })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, "Property 'payoutAddress' must be a string!")
+      }
+    })
+
+    it('should throw an error if satsPaid is not a positive number', () => {
+      try {
+        uut.validate({ proofOfBurnTxid: 'fake-txid', cid: 'test', claimTxid: 'fake-txid', filename: 'test.txt', address: 'fake-address', payoutAddress: 'fake-payout' })
+
+        assert.fail('Unexpected code path')
+      } catch (err) {
+        assert.include(err.message, "Property 'satsPaid' must be a number greater than 0!")
+      }
+    })
+
+    it('should return a Pin object with BCH payment fields', () => {
       const inputData = {
         proofOfBurnTxid: 'fake-txid',
         cid: 'test',
         claimTxid: 'test-txid',
         filename: 'test.txt',
-        address: 'fake-address'
+        address: 'fake-address',
+        payoutAddress: 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr',
+        satsPaid: 3000,
+        paymentKind: 'bch-payment'
       }
 
       const result = uut.validate(inputData)
@@ -78,10 +101,17 @@ describe('#Pin-Entity', () => {
       assert.property(result, 'claimTxid')
       assert.property(result, 'pobTxDetails')
       assert.property(result, 'claimTxDetails')
-      assert.property(result, 'tokensBurned')
       assert.property(result, 'validClaim')
       assert.property(result, 'dataPinned')
       assert.property(result, 'address')
+
+      // PS010 v2.0.0 payment fields.
+      assert.equal(result.paymentKind, 'bch-payment')
+      assert.equal(result.satsPaid, 3000)
+      assert.equal(result.payoutAddress, inputData.payoutAddress)
+
+      // No legacy PSF-token field is written for new records.
+      assert.notProperty(result, 'tokensBurned')
     })
   })
 })

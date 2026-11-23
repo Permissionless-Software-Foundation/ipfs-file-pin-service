@@ -72,8 +72,11 @@ class IpfsUseCaseMock {
     return false
   }
 
-  async getWritePrice() {
-    return 0.08
+  getPaymentAddress () {
+    return {
+      address: 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr',
+      satsPerMb: 2000
+    }
   }
   async pinLocalFile() {
     return {}

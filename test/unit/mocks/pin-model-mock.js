@@ -169,6 +169,11 @@ const pinModelMock = {
         blocktime: 1741484217,
         isValidSlp: false
     },
+    // PS010 v2.0.0 payment fields.
+    paymentKind: 'bch-payment',
+    satsPaid: 3000,
+    payoutAddress: 'bitcoincash:qrhmpdplkmr2lwf8ekusaxzqntx7c9hp9utzcvkjcr',
+    // Legacy PSF-token field, still present on old documents.
     tokensBurned: 0.08335233,
     recordTime: 1743036530294,
     __v: 0
