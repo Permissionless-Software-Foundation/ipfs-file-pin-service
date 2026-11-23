@@ -1,6 +1,6 @@
 {
   "name": "ipfs-file-pin-service",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Helia node that pins IPFS files. Activated by psf-slp-indexer.",
   "main": "index.js",
   "type": "module",
