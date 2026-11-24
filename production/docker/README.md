@@ -23,3 +23,7 @@ If you already have an IPFS node running on the computer, you will need to chang
 - `docker-compose up -d`
 
 Note that the port changes also need to be announced to other peers if this node has a publicly accessible IP address; see the `CONNECT_PREF` setting in `start-production.sh`.
+
+For PS010 Phase-1 BCH pin payments, uncomment and set `PAYOUT_ADDRESS` and `SATS_PER_MB` at the top of `start-production.sh` — without them the service refuses to serve `GET /ipfs/payment-address` (fails closed). `STARTUP_PEERS` can be used to dial companion nodes on a private network (for example an `ipfs-file-stager` instance).
+
+> **Important:** `npm start` must remain the **last** statement in `start-production.sh`. The server blocks at that line until shutdown, so any environment variables exported below it are ignored.
