@@ -141,12 +141,8 @@ export default {
   ipfsWebRtcPort: process.env.IPFS_WEB_RTC_PORT ? process.env.IPFS_WEB_RTC_PORT : 4005,
   connectPref: process.env.CONNECT_PREF, // Used in helia-coord to select connection preference.
 
-  // Settings for production, using external go-ipfs node.
-  isProduction: process.env.SVC_ENV === 'prod' ? true : false,
-  ipfsHost: process.env.IPFS_HOST ? process.env.IPFS_HOST : 'localhost',
-  ipfsApiPort: process.env.IPFS_API_PORT
-    ? parseInt(process.env.IPFS_API_PORT)
-    : 5001,
+  // The IPFS node is embedded via helia-coord. Ports for the embedded node are
+  // set above.
 
   chatPubSubChan: 'psf-ipfs-chat-001',
 
