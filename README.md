@@ -127,6 +127,8 @@ You can also connect to peers at runtime via `POST /ipfs/connect`.
 | Variable         | Description                                        | Default                  |
 |------------------|----------------------------------------------------|--------------------------|
 | `MAX_PIN_SIZE`   | Maximum allowable file size in bytes                | `100000000` (100 MB)     |
+| `PAYOUT_ADDRESS` | Single, operator-configured BCH payout address for pin payments (PS010 Phase-1) | *empty* (required for production) |
+| `SATS_PER_MB`    | Pin price in satoshis per MB. No USD oracle; operator keeps current. ~$0.01/MB at $200 BCH = 5000 | *empty* (required for production) |
 | `REQ_TOKEN_QTY`  | Default PSF tokens required per MB (overridden by Minting Council lookup) | `0.03570889` |
 | `DOMAIN_NAME`    | Base URL for file download links                   | `http://localhost:5031`  |
 
