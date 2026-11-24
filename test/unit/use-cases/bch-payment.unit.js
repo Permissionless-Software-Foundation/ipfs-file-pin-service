@@ -233,18 +233,26 @@ describe('#bch-payment', () => {
   })
 
   describe('#minimumAcceptedSats', () => {
-    it('should apply the 98% tolerance to the floored requirement', () => {
-      // 50 KB => floor 200 sats; 98% of 200 = 196.
+    it('should apply the 98% tolerance to the floored requirement, dust-bounded', () => {
+      // 50 KB => floor 546 sats (dust-bound); 98% of 546 = 535.08 → 535, but
+      // the dust limit dominates, so the floor is 546.
       const result = minimumAcceptedSats({ fileSizeBytes: 50000, satsPerMb: 2000 })
 
-      assert.equal(result, 196)
+      assert.equal(result, 546)
     })
 
     it('should use integer math (required * 98 / 100), not float multiplication', () => {
-      // 150 KB => 300 required; 98% = 294.
+      // 150 KB => 546 (dust-bound floor); see above.
       const result = minimumAcceptedSats({ fileSizeBytes: 150000, satsPerMb: 2000 })
 
-      assert.equal(result, 294)
+      assert.equal(result, 546)
+    })
+
+    it('should apply the tolerance above the dust floor', () => {
+      // 1 MB at 2000 sats/MB => required 2000, 98% = 1960, above dust.
+      const result = minimumAcceptedSats({ fileSizeBytes: 1000000, satsPerMb: 2000 })
+
+      assert.equal(result, 1960)
     })
   })
 

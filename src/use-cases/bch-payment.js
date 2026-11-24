@@ -12,7 +12,7 @@
 */
 
 // Local libraries
-import { requiredSats } from './required-sats.js'
+import { requiredSats, DUST_SATS } from './required-sats.js'
 
 // CashAddr parameters (https://github.com/bitcoincashorg/bitcoincash.org/blob/master/spec/cashaddr.md)
 const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
@@ -277,7 +277,12 @@ export function minimumAcceptedSats (inObj = {}) {
   const required = requiredSats({ fileSizeBytes, satsPerMb })
 
   // Integer math, so required=200 => 196 and not 195 due to 196.00000000000003.
-  return Math.floor((required * TOLERANCE_PERCENT) / 100)
+  // The tolerance is additionally bounded below by the dust limit: the
+  // validator must never accept a payment below what the network would relay.
+  return Math.max(
+    Math.floor((required * TOLERANCE_PERCENT) / 100),
+    DUST_SATS
+  )
 }
 
 // Decide whether a recorded BCH payment satisfies PS010 §7 for a file.
