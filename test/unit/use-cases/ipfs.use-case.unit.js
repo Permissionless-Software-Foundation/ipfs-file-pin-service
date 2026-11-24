@@ -1022,12 +1022,22 @@ describe('#ipfs-use-case', () => {
       assert.equal(result, false)
     })
 
-    it('should return true when the BCH payment covers the 100 KB floor', async () => {
-      // 50 KB file pays the floor (100 KB) at 2000 sats/MB = 200 sats.
-      const inObj = { fileSize: 50000, satsPaid: 200 }
+    it('should return true when the BCH payment covers the dust-bounded floor', async () => {
+      // 50 KB file pays the floor: 100 KB charge at 2000 sats/MB = 200 sats,
+      // dust-bounded to 546. A payment above the floor must be accepted.
+      const inObj = { fileSize: 50000, satsPaid: 600 }
 
       const result = await uut.validateSizeAndPayment(inObj)
       assert.equal(result, true)
+    })
+
+    it('should reject a payment below the dust-bounded floor (F5)', async () => {
+      // 50 KB file paying the old 100 KB floor (200 sats) is now below both
+      // the dust-bounded floor (546) and its 98% tolerance (535).
+      const inObj = { fileSize: 50000, satsPaid: 200 }
+
+      const result = await uut.validateSizeAndPayment(inObj)
+      assert.equal(result, false)
     })
 
     it('should accept a payment within the 98% tolerance', async () => {
