@@ -8,7 +8,6 @@ import sinon from 'sinon'
 import IPFSCoordAdapter from '../../../src/adapters/ipfs/ipfs-coord.js'
 import create from '../mocks/ipfs-mock.js'
 import IPFSCoordMock from '../mocks/ipfs-coord-mock.js'
-import config from '../../../config/index.js'
 
 describe('#IPFS', () => {
   let uut
@@ -76,19 +75,6 @@ describe('#IPFS', () => {
       // console.log('result: ', result)
 
       assert.equal(result, true)
-    })
-
-    it('should return a promise that resolves into an instance of IPFS in production mode', async () => {
-      uut.config.isProduction = true
-
-      // Mock dependencies.
-      uut.IpfsCoord = IPFSCoordMock
-      sandbox.stub(uut, 'publicIp').resolves('123.456.78.9')
-
-      const result = await uut.start()
-      // console.log('result: ', result)
-      assert.equal(result, true)
-      config.isProduction = false
     })
   })
 

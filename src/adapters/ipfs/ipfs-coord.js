@@ -83,11 +83,6 @@ class IpfsCoordAdapter {
       tcpPort: this.config.ipfsTcpPort
     }
 
-    // Production env uses external go-ipfs node.
-    // if (this.config.isProduction) {
-    //   ipfsCoordOptions.nodeType = 'external'
-    // }
-
     this.ipfsCoord = new this.IpfsCoord(ipfsCoordOptions)
 
     // Wait for the ipfs-coord library to signal that it is ready.

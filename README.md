@@ -99,8 +99,6 @@ The application is configured through environment variables. All configuration i
 | `ENABLE_CIRCUIT_RELAY` | Enable circuit relay mode (node must not be behind a firewall)  | *unset* (disabled)       |
 | `CR_DOMAIN`            | SSL domain for WebSocket circuit relay connections               | *unset*                  |
 | `USE_WEB_RTC`          | Enable WebRTC transport                                         | `false`                  |
-| `IPFS_HOST`            | External IPFS host (production)                                 | `localhost`              |
-| `IPFS_API_PORT`        | External IPFS API port (production)                             | `5001`                   |
 | `WEB2_API`             | Public REST API URL announced to IPFS peers                     | *unset*                  |
 | `STARTUP_PEERS`        | Comma-separated IPFS multiaddrs to dial after Helia startup     | *unset* (none)           |
 

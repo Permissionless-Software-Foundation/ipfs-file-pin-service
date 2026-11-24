@@ -26,10 +26,8 @@ export DBURL=mongodb://172.17.0.1:5556/ipfs-service-prod
 # Configure REST API port
 export PORT=5031
 
-# Production settings using external go-ipfs node.
+# Production settings for the embedded helia-coord IPFS node.
 export SVC_ENV=prod
-export IPFS_HOST=172.17.0.1
-export IPFS_API_PORT=5001
 export IPFS_TCP_PORT=4001
 export IPFS_WS_PORT=4003
 export IPFS_WEB_RTC_PORT=4005
