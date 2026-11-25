@@ -24,6 +24,10 @@ describe('#User-Adapter', () => {
     mongoose.Promise = global.Promise
     await mongoose.connect(config.database)
 
+    // Prune any leftover user document from a previous interrupted run. Without
+    // this, a stale 'test983@test.com' doc causes an E11000 duplicate key error.
+    await User.deleteMany({ email: 'test983@test.com' })
+
     testuser = new User({
       email: 'test983@test.com',
       name: 'test983',
