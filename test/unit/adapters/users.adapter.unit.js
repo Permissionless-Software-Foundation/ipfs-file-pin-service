@@ -38,7 +38,7 @@ describe('#User-Adapter', () => {
   afterEach(() => sandbox.restore())
 
   after(async () => {
-    await testuser.remove()
+    await testuser.deleteOne()
 
     mongoose.connection.close()
   })

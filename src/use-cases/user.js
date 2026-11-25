@@ -146,7 +146,7 @@ class UserLib {
 
   async deleteUser (user) {
     try {
-      await user.remove()
+      await user.deleteOne()
     } catch (err) {
       wlogger.error('Error in lib/users.js/deleteUser()')
       throw err
