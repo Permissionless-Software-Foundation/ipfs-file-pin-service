@@ -6,11 +6,15 @@
 
     requiredSats({ fileSizeBytes, satsPerMb }) =
         max( ceil( fileSizeBytes / 1e6 * satsPerMb ),
-             ceil( 0.1 * satsPerMb ) )
+             ceil( 0.1 * satsPerMb ),
+             546 )
 
   The second term is the locked 100 KB minimum charge (PS010 §3). The floor is a
   pricing rule that lives inside this helper; callers (client or validator) MUST
-  NOT re-derive a floor of their own.
+  NOT re-derive a floor of their own. The third term dust-bounds the floor: a
+  quote below the BCH dust limit (546 sats) can never be paid, because relaying
+  nodes reject the broadcast ("dust" error). Operators with a low satsPerMb
+  therefore still get a spendable minimum quote.
 
   PS010 §3 also states that this function is defined once in the shared
   psffpp-payments library and imported by both announcer and pin-service. Until
@@ -23,6 +27,11 @@ const BYTES_PER_MB = 1000000
 
 // The locked minimum charge, expressed in bytes: 100 KB (PS010 §3).
 export const MIN_CHARGE_BYTES = 100000
+
+// BCH standard dust limit. An output below this value is uneconomical to
+// spend and relaying nodes refuse to broadcast it ("dust" rejection). See the
+// header comment on requiredSats() for why the floor is bounded by this.
+export const DUST_SATS = 546
 
 // Compute the number of satoshis required for a pin claim.
 //
@@ -45,7 +54,12 @@ export function requiredSats (inObj = {}) {
   const meteredSats = Math.ceil((fileSizeBytes * satsPerMb) / BYTES_PER_MB)
 
   // 100 KB minimum charge. Same trick: satsPerMb / 10 rather than 0.1 * satsPerMb.
-  const floorSats = Math.ceil(satsPerMb / (BYTES_PER_MB / MIN_CHARGE_BYTES))
+  // The floor is additionally bounded below by the dust limit, so that the
+  // validator never asks for (or accepts) an amount the network could not relay.
+  const floorSats = Math.max(
+    Math.ceil(satsPerMb / (BYTES_PER_MB / MIN_CHARGE_BYTES)),
+    DUST_SATS
+  )
 
   return Math.max(meteredSats, floorSats)
 }

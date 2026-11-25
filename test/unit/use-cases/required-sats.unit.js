@@ -9,38 +9,48 @@ import { assert } from 'chai'
 import { requiredSats, MIN_CHARGE_BYTES } from '../../../src/use-cases/required-sats.js'
 
 describe('#requiredSats', () => {
-  describe('100 KB floor', () => {
-    it('should charge the floor for a 50 KB file at 2000 sats/MB', () => {
-      // 50 KB meters at 100 sats; the floor is 100 KB = 200 sats.
+  describe('100 KB floor (dust-bounded)', () => {
+    it('should charge the dust-bounded floor for a 50 KB file at 2000 sats/MB', () => {
+      // 50 KB meters at 100 sats; the 100 KB floor is 200 sats, but the
+      // dust limit (546) dominates.
       const result = requiredSats({ fileSizeBytes: 50000, satsPerMb: 2000 })
 
-      assert.equal(result, 200)
+      assert.equal(result, 546)
     })
 
-    it('should charge the floor for a zero-byte file', () => {
+    it('should charge the dust-bounded floor for a zero-byte file', () => {
       const result = requiredSats({ fileSizeBytes: 0, satsPerMb: 2000 })
 
-      assert.equal(result, 200)
+      assert.equal(result, 546)
     })
 
     it('should meter a file of exactly 100 KB (no ceiling drift)', () => {
       // Exactly at the boundary: 100 KB is metered, and the metered amount must
-      // equal the floor. A naive 0.1 * satsPerMb would ceil to 201 here.
+      // equal the floor. A naive 0.1 * satsPerMb would ceil to 201 here; the
+      // dust bound lifts the floor above that.
       const result = requiredSats({ fileSizeBytes: MIN_CHARGE_BYTES, satsPerMb: 2000 })
 
-      assert.equal(result, 200)
+      assert.equal(result, 546)
     })
 
-    it('should meter a 150 KB file at 2000 sats/MB', () => {
-      const result = requiredSats({ fileSizeBytes: 150000, satsPerMb: 2000 })
+    it('should keep the 100 KB floor for a high rate where dust does not dominate', () => {
+      // 6000 sats/MB → 100 KB floor = 600, above the 546 dust limit.
+      const result = requiredSats({ fileSizeBytes: 50000, satsPerMb: 6000 })
 
-      assert.equal(result, 300)
+      assert.equal(result, 600)
     })
 
     it('should charge the floor when the metered amount is below it (99 KB)', () => {
       const result = requiredSats({ fileSizeBytes: 99000, satsPerMb: 2000 })
 
-      assert.equal(result, 200)
+      assert.equal(result, 546)
+    })
+
+    it('should floor the production rate (5084) at the dust limit', () => {
+      // 100 KB floor at 5084 sats/MB = 509 sats, below the dust limit; the
+      // dust bound must lift it to 546 so small pins are spendable.
+      assert.equal(requiredSats({ fileSizeBytes: 100000, satsPerMb: 5084 }), 546)
+      assert.equal(requiredSats({ fileSizeBytes: 1000, satsPerMb: 5084 }), 546)
     })
   })
 
@@ -51,12 +61,12 @@ describe('#requiredSats', () => {
       assert.equal(result, 2000)
     })
 
-    it('should round sub-satoshi amounts up', () => {
-      // 1 byte at 2000 sats/MB = 0.002 sats => the floor applies.
-      // 100,001 bytes at 2000 sats/MB = 200.002 sats => 201 sats.
-      const result = requiredSats({ fileSizeBytes: 100001, satsPerMb: 2000 })
+    it('should round sub-satoshi amounts up (above the dust floor)', () => {
+      // 100,001 bytes at 6000 sats/MB = 600.006 sats => 601, above the 546
+      // dust floor. (At 2000 sats/MB the dust floor would dominate.)
+      const result = requiredSats({ fileSizeBytes: 100001, satsPerMb: 6000 })
 
-      assert.equal(result, 201)
+      assert.equal(result, 601)
     })
 
     it('should meter a large file', () => {
