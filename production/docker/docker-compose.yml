@@ -2,7 +2,7 @@
 
 services:
   mongo-file-service:
-    image: mongo:4.2.0
+    image: mongo:8.0
     container_name: mongo-file-service
     ports:
       - '5556:27017' # <host port>:<container port>
