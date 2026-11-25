@@ -88,12 +88,7 @@ class Admin {
   async deleteExistingSystemUser () {
     try {
       mongoose.Promise = global.Promise
-      mongoose.set('useCreateIndex', true) // Stop deprecation warning.
-
-      await mongoose.connect(config.database, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-      })
+      await mongoose.connect(config.database)
 
       await _this.User.deleteOne({ email: 'system@system.com' })
       return true

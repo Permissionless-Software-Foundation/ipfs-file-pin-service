@@ -22,11 +22,7 @@ describe('#User-Adapter', () => {
     // Connect to the Mongo Database.
     console.log(`Connecting to database: ${config.database}`)
     mongoose.Promise = global.Promise
-    mongoose.set('useCreateIndex', true) // Stop deprecation warning.
-    await mongoose.connect(config.database, {
-      useUnifiedTopology: true,
-      useNewUrlParser: true
-    })
+    await mongoose.connect(config.database)
 
     testuser = new User({
       email: 'test983@test.com',

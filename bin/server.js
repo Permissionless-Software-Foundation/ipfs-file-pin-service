@@ -50,14 +50,10 @@ class Server {
       if (!this.config.noMongo) {
         // Connect to the Mongo Database.
         this.mongoose.Promise = global.Promise
-        this.mongoose.set('useCreateIndex', true) // Stop deprecation warning.
         console.log(
           `Connecting to MongoDB with this connection string: ${this.config.database}`
         )
-        await this.mongoose.connect(this.config.database, {
-          useUnifiedTopology: true,
-          useNewUrlParser: true
-        })
+        await this.mongoose.connect(this.config.database)
       }
 
       console.log(`Starting environment: ${this.config.env}`)
