@@ -42,7 +42,7 @@ class LocalUseCases {
     await this.adapters.ipfs.ipfs.pins.rm(cid)
 
     // Delete the local pin model from the database.
-    await localPin.remove()
+    await localPin.deleteOne()
 
     return localPin
   }

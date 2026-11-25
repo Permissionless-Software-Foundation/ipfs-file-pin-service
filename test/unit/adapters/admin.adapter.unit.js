@@ -119,4 +119,13 @@ describe('Admin', () => {
       })
     })
   }
+
+  // The createSystemUser() tests insert a 'system@system.com' user into the
+  // users collection. Clean it up so the suite leaves no residue behind.
+  after(async () => {
+    if (!config.noMongo) {
+      const admin = new Admin()
+      await admin.deleteExistingSystemUser()
+    }
+  })
 })

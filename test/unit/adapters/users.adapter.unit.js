@@ -22,11 +22,11 @@ describe('#User-Adapter', () => {
     // Connect to the Mongo Database.
     console.log(`Connecting to database: ${config.database}`)
     mongoose.Promise = global.Promise
-    mongoose.set('useCreateIndex', true) // Stop deprecation warning.
-    await mongoose.connect(config.database, {
-      useUnifiedTopology: true,
-      useNewUrlParser: true
-    })
+    await mongoose.connect(config.database)
+
+    // Prune any leftover user document from a previous interrupted run. Without
+    // this, a stale 'test983@test.com' doc causes an E11000 duplicate key error.
+    await User.deleteMany({ email: 'test983@test.com' })
 
     testuser = new User({
       email: 'test983@test.com',
@@ -42,7 +42,7 @@ describe('#User-Adapter', () => {
   afterEach(() => sandbox.restore())
 
   after(async () => {
-    await testuser.remove()
+    await testuser.deleteOne()
 
     mongoose.connection.close()
   })

@@ -483,7 +483,7 @@ class IpfsUseCases {
           const Pins = this.adapters.localdb.Pins
           const existingModel = await Pins.findOne({ cid })
           console.log('existingModel: ', existingModel)
-          await existingModel.remove()
+          await existingModel.deleteOne()
           console.log(`Database model for ${cid} deleted.`)
         } catch (err) {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)
@@ -666,7 +666,7 @@ class IpfsUseCases {
           const Pins = this.adapters.localdb.Pins
           const existingModel = await Pins.findOne({ cid })
           console.log('existingModel: ', existingModel)
-          await existingModel.remove()
+          await existingModel.deleteOne()
           console.log(`Database model for ${cid} deleted.`)
         } catch (err) {
           console.error(`Could not delete DB model for CID ${cid}. Error: `, err)

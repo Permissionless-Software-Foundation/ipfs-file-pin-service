@@ -114,7 +114,7 @@ describe('#local-use-case', () => {
         CID: 'bafytest1',
         filename: 'file1.txt',
         fileSize: 100,
-        remove: sandbox.stub().resolves(true)
+        deleteOne: sandbox.stub().resolves(true)
       }
 
       sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
@@ -122,7 +122,7 @@ describe('#local-use-case', () => {
       const result = await uut.deleteByCid({ cid: 'bafytest1' })
 
       assert.equal(result.CID, 'bafytest1')
-      assert.isTrue(mockPin.remove.calledOnce)
+      assert.isTrue(mockPin.deleteOne.calledOnce)
     })
 
     it('should throw an error if IPFS unpin fails', async () => {
@@ -131,7 +131,7 @@ describe('#local-use-case', () => {
           CID: 'bafytest1',
           filename: 'file1.txt',
           fileSize: 100,
-          remove: sandbox.stub().resolves(true)
+          deleteOne: sandbox.stub().resolves(true)
         }
 
         sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
@@ -151,7 +151,7 @@ describe('#local-use-case', () => {
           CID: 'bafytest1',
           filename: 'file1.txt',
           fileSize: 100,
-          remove: sandbox.stub().rejects(new Error('delete failed'))
+          deleteOne: sandbox.stub().rejects(new Error('delete failed'))
         }
 
         sandbox.stub(adapters.localdb.LocalPins, 'findOne').resolves(mockPin)
