@@ -30,12 +30,13 @@ export COORD_NAME=ipfs-file-pin-service
 # price: (0.01 / 200) * 100000000 = 5000.
 # export SATS_PER_MB=5000
 
-# ---------- Optional peer dials (STARTUP_PEERS) ----------
-# Comma-separated IPFS multiaddrs dialed after Helia startup. Use this to
-# connect to specific nodes on a private network (for example, an
-# ipfs-file-stager instance that stages files for pinning). Each entry must
-# be a full multiaddr including the /p2p/<peer-id> component.
-# export STARTUP_PEERS="/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# ---------- Optional bootstrap peers (BOOTSTRAP_SERVERS) ----------
+# Comma-separated IPFS multiaddrs, replacing helia-coord's hard-coded
+# DEFAULT_BOOTSTRAP_PEERS. Use this to point the node at peers on a private
+# network (for example, an ipfs-file-stager instance that stages files for
+# pinning). Each entry must be a full multiaddr including /p2p/<peer-id>.
+# STARTUP_PEERS is still accepted as a legacy alias for this setting.
+# export BOOTSTRAP_SERVERS="/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # END: Optional configuration settings
 

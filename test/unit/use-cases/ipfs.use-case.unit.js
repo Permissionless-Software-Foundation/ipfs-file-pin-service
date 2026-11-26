@@ -1009,7 +1009,10 @@ describe('#ipfs-use-case', () => {
       assert.equal(result.downloadTries, 35)
       assert.isTrue(Number.isFinite(new Date(result.nextRetryAt).getTime()))
       assert.isAbove(result.nextRetryAt, before)
-      assert.isAtMost(result.nextRetryAt - before, thirtyDaysMs)
+      // The backoff is capped at 30 days. Allow a second of slack: the
+      // Date.now() inside _recordDownloadFailure() can tick past the `before`
+      // sample above, which otherwise fails this assertion intermittently.
+      assert.isAtMost(result.nextRetryAt - before, thirtyDaysMs + 1000)
     })
   })
   describe('#validateSizeAndPayment', () => {
