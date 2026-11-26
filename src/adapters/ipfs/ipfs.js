@@ -9,7 +9,6 @@
 
 // Global npm libraries
 import CreateHeliaNode from 'helia-coord/create-helia-node'
-import { multiaddr } from '@multiformats/multiaddr'
 
 // Local libraries
 import config from '../../../config/index.js'
@@ -35,18 +34,21 @@ class IpfsAdapter {
     this.start = this.start.bind(this)
     this.stop = this.stop.bind(this)
     this.getSeed = this.getSeed.bind(this)
-    this.connectToStartupPeers = this.connectToStartupPeers.bind(this)
   }
 
   // Start an IPFS node.
   async start () {
     try {
       // Create the helia-coord node factory with production configuration.
+      // bootstrapPeers is undefined unless BOOTSTRAP_SERVERS (or the legacy
+      // STARTUP_PEERS alias) is set; undefined makes helia-coord fall back to
+      // its DEFAULT_BOOTSTRAP_PEERS list.
       this.heliaNode = new CreateHeliaNode({
         ipfsDir: IPFS_DIR,
         tcpPort: this.config.ipfsTcpPort,
         wsPort: this.config.ipfsWsPort,
         isCircuitRelay: this.config.isCircuitRelay,
+        bootstrapPeers: this.config.bootstrapPeers,
         getSeed: this.getSeed
       })
 
@@ -58,10 +60,10 @@ class IpfsAdapter {
 
       console.log('IPFS ID: ', this.id)
       console.log('Multiaddrs: ', this.multiaddrs)
-
-      if (this.config.startupPeers.length) {
-        await this.connectToStartupPeers(ipfs, this.config.startupPeers)
-      }
+      console.log(
+        'Bootstrap peers: ',
+        this.config.bootstrapPeers || '(helia-coord defaults)'
+      )
 
       // Signal that this adapter is ready.
       this.isReady = true
@@ -79,18 +81,6 @@ class IpfsAdapter {
     await this.ipfs.stop()
 
     return true
-  }
-
-  // Dial configured peers after Helia startup. Failures are logged but non-fatal.
-  async connectToStartupPeers (ipfs, peers) {
-    for (const addr of peers) {
-      try {
-        await ipfs.libp2p.dial(multiaddr(addr))
-        console.log(`Connected to startup peer: ${addr}`)
-      } catch (err) {
-        console.warn(`Failed to connect to startup peer ${addr}: ${err.message}`)
-      }
-    }
   }
 
   // This function opens the seed used to generate the key for this IPFS peer.

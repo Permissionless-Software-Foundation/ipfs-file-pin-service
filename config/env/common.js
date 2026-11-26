@@ -6,8 +6,9 @@
   - CONNECT_PREF: should have a value of 'cr' (default), or 'direct'. This is
     used by helia-coord to select a connection preference between peers. Servers
     with an ip4 or ip6 address should use 'direct'.
-  - STARTUP_PEERS: comma-separated list of IPFS multiaddrs to dial after Helia
-    startup (e.g. /ip4/x.x.x.x/tcp/4001/p2p/12D3Koo...).
+  - BOOTSTRAP_SERVERS: comma-delimited list of peer multiaddrs, replacing the
+    hard-coded DEFAULT_BOOTSTRAP_PEERS list in helia-coord. Unset uses those
+    defaults. STARTUP_PEERS is still accepted as a legacy alias.
 */
 
 /* eslint  no-unneeded-ternary:0 */
@@ -27,9 +28,33 @@ const ipfsCoordName = process.env.COORD_NAME
   ? process.env.COORD_NAME
   : 'ipfs-bch-wallet-service'
 
-function parseMultiaddrs (envValue) {
-  if (!envValue) return []
-  return envValue.split(',').map(s => s.trim()).filter(Boolean)
+// Parse the comma-delimited peer list. BOOTSTRAP_SERVERS is the current name;
+// STARTUP_PEERS is honoured as a legacy alias.
+//
+// Returns undefined (never []) when unset or blank: helia-coord does
+// `localConfig.bootstrapPeers || DEFAULT_BOOTSTRAP_PEERS`, and [] is truthy, so
+// passing an empty array would silently disable bootstrap discovery.
+//
+// A malformed entry throws at startup, where it can be fixed, instead of
+// surfacing as a cryptic libp2p failure minutes later.
+function parseBootstrapPeers () {
+  const raw = process.env.BOOTSTRAP_SERVERS || process.env.STARTUP_PEERS
+
+  const peers = (raw || '')
+    .split(',')
+    .map(peer => peer.trim())
+    .filter(peer => peer.length > 0)
+
+  if (peers.length === 0) return undefined
+
+  const invalid = peers.find(peer => !peer.startsWith('/'))
+  if (invalid) {
+    throw new Error(
+      `BOOTSTRAP_SERVERS contains an invalid multiaddr: '${invalid}'. Each entry must start with '/', e.g. /ip4/1.2.3.4/tcp/4101/p2p/12D3KooW...`
+    )
+  }
+
+  return peers
 }
 
 export default {
@@ -146,8 +171,9 @@ export default {
 
   chatPubSubChan: 'psf-ipfs-chat-001',
 
-  // IPFS peers to dial immediately after Helia startup.
-  startupPeers: parseMultiaddrs(process.env.STARTUP_PEERS),
+  // Peer list used for bootstrap discovery, replacing helia-coord's hard-coded
+  // DEFAULT_BOOTSTRAP_PEERS. Undefined (default) keeps those defaults.
+  bootstrapPeers: parseBootstrapPeers(),
 
   useWebRtc: process.env.USE_WEB_RTC ? process.env.USE_WEB_RTC : false,
 
